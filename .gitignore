@@ -1,0 +1,16 @@
+.DS_Store
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+*.wav
+*.flac
+data/
+models/*.pt
+models/*.onnx
+build/
+dist/
+.pio/
+.vscode/
+node_modules/
