@@ -1,0 +1,26 @@
+1. **Blocker — the modeled ESP32 does not fit in the stated position.**  
+   Bore radius is `hull_r - wall = 50 - 2.4 = 47.6 mm` ([lines 12–14, 77]). The ESP32 preview occupies `x = ±10 mm`, `y = 22.9…48.9 mm` ([line 153]). At `x = ±10`, the circular bore permits only `|y| ≤ √(47.6²−10²) = 46.5 mm`; the board penetrates the wall by **2.4 mm**. It also overlaps the “stop” geometry at `x = -11.2…-8.8 mm`, `y = 20.5…32.5 mm` ([line 91]).  
+   Fix: place the board fully outboard of the bank ribs, with `y = 16.5…42.5 mm` (center `y = 29.5 mm`) and move the stop accordingly. This leaves ~4 mm radial clearance at the board’s outer corners. Do this before printing.
+
+2. **Blocker — the ESP32 antenna is only about 5.6 mm above the calculated waterline, and its orientation is not constrained.**  
+   The model places the ESP32 from `z = 3` to `73 mm` ([line 153]). Its own displacement calculation gives a **67.4 mm** draft: `529 g / (π·50²/1000) = 67.4 mm` ([lines 157–163]). If the antenna end is at the intended top of the vertical board, it is only `73 − 67.4 = 5.6 mm` above still water. If assembled upside-down, it is submerged. A small heel, wake, or extra water/payload load puts the antenna at the waterline; 2.4 GHz through PLA is workable, but water beside the antenna is not.  
+   Fix: define an antenna-up orientation mechanically and raise its end to at least **95 mm from the hull floor**—target **25–30 mm above the 67 mm waterline**. Mount the ESP32 vertically on a printed/foam-board standoff or strap it higher, and keep the antenna facing the upper dry wall, not the bank.
+
+3. **Major — the power-bank rib slot has exactly zero assembly clearance.**  
+   The bank is modeled as exactly `25 mm` thick ([line 8]), while the inner rib faces are exactly `y = −12.5` and `+12.5 mm` ([lines 87–89]): a **25.0 mm slot**. A real “25 mm” power bank plus PLA elephant-foot, rib roughness, label seams, and dimensional variation will not reliably slide in at 3 AM. The ribs are also only `55 mm` tall, while the bank is `100 mm` tall ([lines 8, 87]), so they constrain only its lower half.  
+   Fix: make `bank_slot = 28 mm`; place rib inner faces at `±14 mm` (e.g. parameterize the translation from `bank_slot/2`). Add a removable top retaining strap across the bank—rubber band/zip tie through two printed slots is sufficient.
+
+4. **Major — no USB-C route has been dimensioned or proven to bend.**  
+   The bank top is at `z = 103 mm`; the ESP top is `z = 73 mm`, so their ports may be **30 mm apart vertically** if both are placed at their upper ends. There is 29 mm to the nominal hull rim above the bank, but no port locations, plug envelope, channel, or specified bend radius in the design. A typical 3–5 mm USB-C lead needs roughly **12–20+ mm** static bend radius; a straight plug also consumes ~8–12 mm before the bend. This might work with a thin right-angle cable, but it is not an assemblable design as drawn—especially after moving the ESP to a non-colliding location.  
+   Fix: require a **right-angle, ≤4 mm OD USB-C cable** and reserve a **30 mm-high × 30 mm-wide** routing void. Orient the bank and ESP ports toward that void, preferably vertically aligned, and keep the cable’s first bend at **R ≥ 12 mm**. Test-fit the actual cable before committing both hulls.
+
+5. **Major — the lid gland is not compatible with closing a threaded lid after the ESP connection is made.**  
+   The lid needs `turns = 2.4`, i.e. **864° of rotation**, to close ([lines 18–20, 104]). The cable hole is only `6 mm` ([line 29, 109]); a terminated connector cannot pass through it. If the hydrophone lead is already attached to the ESP, screwing the lid on twists that lead by 2.4 turns; if it is attached to the hydrophone outside, it twists the 1–2 m drop cable. The 13 mm internal boss ([lines 30, 111–113]) provides no strain-relief or rotation isolation.  
+   Fix: close the lid with the gland lead **unterminated**, then terminate/connect it inside; or replace the threaded closure with 6–8 M3 insert/screw locations so the lid closes without rotation. If keeping threads, add a detachable inline connector inside the buoy and leave at least 150 mm of service loop.
+
+6. **Major — the ESP-to-gland run is not physically allocated.**  
+   The gland center is at radius `lid_bore_r − 14 = 36.35 mm` ([lines 46, 109, 112]); after the 45° rotation it is approximately `(25.7, 25.7)`. Its 8 mm boss intrudes downward from the lid ([lines 30, 111–113]). The current ESP position is already invalid, and after moving it to the valid outboard location, the hydrophone wire must run roughly 55–65 mm upward plus laterally around the bank, with no channel or service-loop provision. It can be made to fit, but not reliably without pinching against the bank/ribs when closing.  
+   Fix: add a **10 mm-wide, 65 mm-high open cable chase** from the board’s connector area to the gland-side wall, and reserve **100–120 mm** of flexible lead as a loop below the boss. Do not route it between the bank and a rib.
+
+7. **Minor — the claimed 111 mm lid OD is not the modeled lid OD.**  
+   `lid_od = 2 × (50 + 1.5 + 0.35 + 2.4) = 108.5 mm` ([lines 44–48]), not 111 mm. This does not stop the payload fitting, but it changes grip/overhang expectations and should be corrected in the build notes before the team judges a printed part against the stated dimensions.

@@ -17,6 +17,7 @@ hydrophone B ──> ESP32-S3 DevKitC ┘     detector → classifier → embedd
 - `pipeline/` — Python: UDP receiver, detector, classifier, embeddings, TDOA, Elasticsearch ingest
 - `elastic/` — index mappings, Kibana saved objects, ES|QL queries, agent
 - `training/` — dataset prep + model training scripts
+- `hardware/` — buoy enclosure: OpenSCAD source, STLs, print previews, design review notes
 
 ## Team
 
