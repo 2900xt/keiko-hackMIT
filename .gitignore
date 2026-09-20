@@ -14,3 +14,5 @@ dist/
 .pio/
 .vscode/
 node_modules/
+training/dataset/audio
+training/dataset/raw
