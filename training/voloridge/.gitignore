@@ -1,0 +1,11 @@
+voloridge.env
+vendor/
+data/noaa_isd/
+data/charles_v2/
+data/*.csv
+data/*.parquet
+analysis/out/
+runs/
+models/*.pt
+models/*.onnx
+*.log
