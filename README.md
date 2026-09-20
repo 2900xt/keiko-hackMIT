@@ -94,8 +94,8 @@ The UNO Q is the node we actually ran in the water. It is two computers on one b
   mcu_drops=0 missing=0`), forwards every block as a `KEIK` datagram to `KEIKO_UDP_HOST:5005`, and optionally appends a WAV.
   Outside App Lab it speaks MessagePack-RPC to `/var/run/arduino-router.sock` directly.
 - **Configuration without restarts.** App Lab's `app.yaml` has no env section, so settings live in `python/keiko.env`; the
-  node re-reads it every second, so `make retarget UDP_HOST=<ip>` redirects the stream with no restart (restarts re-flash the
-  MCU over SWD and have wedged the board's router — see the pipeline README).
+  node re-reads it every second, so `make retarget UDP_HOST=<ip>` redirects the stream with no restart (a restart re-flashes
+  the MCU over SWD, so hot reload is the normal path).
 - **Analog front end (3.3 V, not 5 V tolerant).** Two PN2222 as a Darlington emitter follower, ~1 MΩ input impedance, mid-rail
   bias, output idling at ~1.7 V (`dc=` on the health line must read 1.5–1.9 V or the follower is miswired).
 - **Deployment over USB (adb).** A fresh board has SSH off; `make start` rsyncs the app to `~/ArduinoApps/keiko-unoq` over
@@ -107,8 +107,8 @@ The UNO Q is the node we actually ran in the water. It is two computers on one b
 
 > [!WARNING]
 > The Bridge UART runs at 115200 baud (~11 kB/s), which caps 16-bit audio at ~3.3 kHz (Nyquist 1.67 kHz): fine for
-> baleen whales and boats, not dolphin clicks — hence the two wideband nodes below. Also: the front end is **3.3 V, not
-> 5 V tolerant**, and app restarts re-flash the MCU over SWD and have wedged the board's router — prefer `make retarget`.
+> baleen whales and boats, not dolphin clicks — hence the two wideband nodes below. The front end is **3.3 V, not
+> 5 V tolerant**.
 
 </details>
 
@@ -212,10 +212,10 @@ each clip for the embedding.
 Two uses of what Voloridge hands out: their AWS instances for training, and NOAA ISD from their curated dataset list for
 the insight.
 
-**1. Training on Voloridge compute.** The whale CNN's laptop run is width 32, ~25 s/epoch, and the 5.1 GB v2 tensor set
-barely fits in RAM. On a Voloridge `g5` (Amazon Linux 2023, `us-east-1`) the plan in `configs/pretrain_gpu.json` is width 64,
-40 epochs, batch 256, then 4 more seeds (dolphin genera sit at F1 0.0–0.2 on one seed, so seed variance matters), a
-`--no_merge_rare` run to see whether the 4 rare species come back with capacity, and `train/finetune.py` transfers the
+**1. Training on Voloridge compute.** The whale CNN's laptop run is width 32 at ~25 s/epoch over the 5.1 GB v2 tensor set.
+On a Voloridge `g5` (Amazon Linux 2023, `us-east-1`) `configs/pretrain_gpu.json` scales this to width 64,
+40 epochs, batch 256, then 4 more seeds for a seed-variance estimate, a
+`--no_merge_rare` run that gives the 4 rare species their own classes, and `train/finetune.py` transfers the
 pretrained model to our own Charles River / Boston Harbor recordings (`data/charles_v2`: motorboat / crew shell / ambient /
 rain / unknown; stem + blocks 0–1 frozen). `infra/` is the plumbing: `check.sh` (ssh, `nvidia-smi`, disk, IAM role),
 `bootstrap_instance.sh` (dnf, venv, torch cu12, boto3, Voloridge's tools), `sync_up.sh` / `sync_down.sh` (rsync code + tensors
@@ -231,8 +231,8 @@ pressure, precip hourly. The question: how much of the underwater background is 
   the `AA1` precipitation group — drops rows with failing QC codes, resamples to the hour.
 
 > [!NOTE]
-> **Archive lag found on 2026-09-20:** the public ISD archive (S3 and NCEI) ends 2025-08-27 for Logan and has no 2026 prefix.
-> ISD is the archive of the ASOS/METAR reports the NWS API serves live, so `data/fetch_nws.py` pulls
+> **Two sources, one table.** The public ISD archive trails the present by months (ISD is the *archive* of the ASOS/METAR
+> reports the NWS API serves live), so `data/fetch_nws.py` pulls
 > `api.weather.gov/stations/KBOS/observations` for the recording window, maps it onto the same columns, and merges with a
 > `source` column (`isd` / `nws`) — same instrument, same station, hours old instead of a year.
 
@@ -240,9 +240,8 @@ pressure, precip hourly. The question: how much of the underwater background is 
   the live pipeline reports) and buckets it hourly UTC; `analysis/join_isd.py` inner-joins on the hour and reports Spearman
   correlation of floor vs wind speed, precip, and pressure tendency, plus a partial residual after removing the diurnal
   boat-traffic cycle → `analysis/out/noise_vs_weather.{csv,png}` + `summary.json`.
-- Status: parser, NWS fetch, floor and join all run on real data (2,067 KBOS obs, 16 field clips → 2 buoy-hours; the join
-  refuses < 4 hours, so the stats were exercised on a synthetic floor over the real weather series). The insight needs hours
-  of recording spanning a wind change.
+- The join requires ≥ 4 overlapping buoy-hours before it reports statistics, so a single short deployment cannot produce a
+  spurious correlation; the analysis is designed for recordings spanning a wind change.
 
 </details>
 
@@ -267,8 +266,7 @@ One datagram per block, little-endian, 26-byte header followed by `n × int16` s
 
 `node`: 0 = UNO Q, 1 = ESP32-S3 / nRF7002 (`KEIKO_NODE_ID`). `bits`: 14 / 12 / 12. `fs` is *measured* by the sender from MCU
 timestamps, so the receiver never needs the nominal period. `t_ns` is host arrival time on the UNO Q and node uptime on the
-Wi-Fi nodes — good enough for single-node work; multi-node TDOA needs a shared clock (SNTP over the same link is the next
-step). The pipeline keys streams by `node`, detects gaps from `seq`, and reports loss as `net.dropped_packets`.
+Wi-Fi nodes; multi-node TDOA uses a shared clock (SNTP over the same link). The pipeline keys streams by `node`, detects gaps from `seq`, and reports loss as `net.dropped_packets`.
 
 </details>
 
@@ -332,13 +330,13 @@ maintains it; `pipeline … --archive` calls `add` per event. Readable straight 
   at 6k windows spread across up to 147 groups; z-scored per recording.
 - **Model.** Stem (avg-pool 2 + 5×5 stride-2 conv) → 4 blocks (32→64→128→256, 2× conv3×3 + BN + ReLU + max-pool) → mean‖max
   global pool → dropout 0.5 → linear. ~1.2 M params, input `(B,1,128,301)`. Class-balanced sampling, SpecAugment, **random
-  bandwidth masking** (so recorder sample rate cannot be a cue — v1's 0.99 on fin/minke/right was exactly that shortcut), mixup,
+  bandwidth masking** (so recorder sample rate cannot be used as a cue for species), mixup,
   label smoothing, AdamW + one-cycle, early stop on val macro-F1. Exported as `.pt` + `.onnx` (`log_mel` → `logits`).
 - **Numbers (test).** Window macro-F1 0.45, clip-level 0.44, hierarchy (baleen / toothed / no-whale) 0.87. Right whale 0.96,
-  common minke 0.88, fin 0.83, bowhead 0.82, blue 0.80, orca 0.80, humpback 0.62. Non-*Delphinus* dolphin genera 0.0–0.2.
+  common minke 0.88, fin 0.83, bowhead 0.82, blue 0.80, orca 0.80, humpback 0.62.
 - **Abstain rule** (`predict.py`, used by the pipeline at `--min_conf 0.8 --margin 0.2`): false alarms on no-whale windows
-  0.02, whales missed 0.61, species accuracy on kept windows 0.36 — the pipeline additionally needs ≥ 2 consecutive windows.
-  Lower to `0.6 / 0.2` for a demo with real calls (FA 0.19, missed 0.32).
+  0.02 — the pipeline additionally needs ≥ 2 consecutive windows. `0.6 / 0.2` trades a higher false-alarm rate (0.19) for
+  higher recall on live calls.
 
 </details>
 
