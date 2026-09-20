@@ -1,0 +1,171 @@
+site_id,source,provider,name,lat,lon,coord_precision_km
+"watkins:-45.0,167.0",watkins,WHOI Watkins,"5 to 6 miles southeast of Kaikoura Head, New Zealand",-45.0,167.0,60.0
+"watkins:-52.0,-70.0",watkins,WHOI Watkins,Straits of Magellan,-52.0,-70.0,60.0
+"watkins:-77.0,169.0",watkins,WHOI Watkins,"Cape Crozier, Antarctica",-77.0,169.0,60.0
+"watkins:10.0,-86.0",watkins,WHOI Watkins,Costa Rica,10.0,-86.0,60.0
+"watkins:13.0,-61.0",watkins,WHOI Watkins,"11 mi. WSW West Cay, Bequia",13.0,-61.0,60.0
+"watkins:14.0,-61.0",watkins,WHOI Watkins,Dominica,14.0,-61.0,60.0
+"watkins:15.0,-61.0",watkins,WHOI Watkins,N end of Dominica,15.0,-61.0,60.0
+"watkins:15.232,-61.54",watkins,WHOI Watkins,Dominica,15.232,-61.5398,2.0
+"watkins:15.233,-61.46",watkins,WHOI Watkins,"SW of Scott Head, Dominica",15.233,-61.4605,2.0
+"watkins:15.302,-61.458",watkins,WHOI Watkins,Dominica,15.3022,-61.4583,2.0
+"watkins:15.306,-61.54",watkins,WHOI Watkins,Dominica,15.3057,-61.54,2.0
+"watkins:15.309,-61.454",watkins,WHOI Watkins,Dominica,15.309,-61.4537,2.0
+"watkins:15.381,-61.465",watkins,WHOI Watkins,Dominica,15.3813,-61.4647,2.0
+"watkins:15.384,-61.468",watkins,WHOI Watkins,Dominica,15.3842,-61.4677,2.0
+"watkins:15.398,-61.515",watkins,WHOI Watkins,Dominica,15.3982,-61.5152,2.0
+"watkins:15.401,-61.518",watkins,WHOI Watkins,Dominica,15.4012,-61.5182,2.0
+"watkins:15.404,-61.52",watkins,WHOI Watkins,Dominica,15.4045,-61.52,2.0
+"watkins:15.407,-61.53",watkins,WHOI Watkins,Dominica,15.407,-61.5303,2.0
+"watkins:15.419,-61.491",watkins,WHOI Watkins,Dominica,15.4194,-61.4911,2.0
+"watkins:15.43,-61.493",watkins,WHOI Watkins,Dominica,15.4298,-61.4933,2.0
+"watkins:15.465,-61.498",watkins,WHOI Watkins,Dominica,15.465,-61.4983,2.0
+"watkins:15.503,-61.484",watkins,WHOI Watkins,Dominica,15.5027,-61.4845,2.0
+"watkins:15.521,-61.545",watkins,WHOI Watkins,Dominica,15.5213,-61.5452,2.0
+"watkins:15.535,-61.514",watkins,WHOI Watkins,Dominica,15.5348,-61.5138,2.0
+"watkins:15.535,-61.528",watkins,WHOI Watkins,Dominica,15.535,-61.5282,2.0
+"watkins:15.543,-61.509",watkins,WHOI Watkins,Dominica,15.543,-61.509,2.0
+"watkins:16.0,-61.0",watkins,WHOI Watkins,Dominica,16.0,-61.0,60.0
+"watkins:18.0,-64.0",watkins,WHOI Watkins,"1-1.5 miles North of Tortola, British Virgin Islands",18.0,-64.0,60.0
+"watkins:18.0,-68.0",watkins,WHOI Watkins,"Tortola, British Virgin Islands",18.0,-68.0,60.0
+"watkins:19.0,-156.0",watkins,WHOI Watkins,"Kealakekua Bay, Hawaii",19.0,-156.0,60.0
+"watkins:19.0,-66.0",watkins,WHOI Watkins,"3 miles N of San Juan, Puerto Rico",19.0,-66.0,60.0
+"watkins:19.467,-155.917",watkins,WHOI Watkins,"Kealakekua Bay, Hawaii",19.4667,-155.9167,2.0
+"watkins:19.5,-156.0",watkins,WHOI Watkins,"Kealakekua Bay, Hawaii",19.5,-156.0,2.0
+"watkins:21.0,-157.0",watkins,WHOI Watkins,"Off Maui, HI",21.0,-157.0,60.0
+"watkins:24.0,-112.0",watkins,WHOI Watkins,"Magdalena Bay, Baja, California",24.0,-112.0,60.0
+"watkins:25.0,-77.0",watkins,WHOI Watkins,"NW arm of Tongue of the Ocean, Northern Bahamas",25.0,-77.0,60.0
+"watkins:25.0,-79.0",watkins,WHOI Watkins,"11 miles NW of Bimini, Northern Bahamas",25.0,-79.0,60.0
+"watkins:25.0,-80.0",watkins,WHOI Watkins,"Biscayne Bay, Florida",25.0,-80.0,60.0
+"watkins:28.0,-13.0",watkins,WHOI Watkins,"4 mi. NE Isla de Lobo, Canary Islands",28.0,-13.0,60.0
+"watkins:29.0,-13.0",watkins,WHOI Watkins,"Lower end of Lanzarote Is., Canary I.",29.0,-13.0,60.0
+"watkins:29.0,-14.0",watkins,WHOI Watkins,"W of Lanzarote, Canary Islands",29.0,-14.0,60.0
+"watkins:31.0,-65.0",watkins,WHOI Watkins,"Plantagenet Bank, Bermuda",31.0,-65.0,60.0
+"watkins:31.967,-65.167",watkins,WHOI Watkins,"over Plantagenet Banks, Bermuda",31.9667,-65.1667,2.0
+"watkins:32.0,-117.0",watkins,WHOI Watkins,"1 mi. off Point Loma, San Diego, Calif.",32.0,-117.0,60.0
+"watkins:32.0,-64.0",watkins,WHOI Watkins,Bermuda,32.0,-64.0,60.0
+"watkins:32.267,-64.717",watkins,WHOI Watkins,"off Gibbs Hill Light, Bermuda",32.2667,-64.7167,2.0
+"watkins:32.367,-64.633",watkins,WHOI Watkins,"St. David's Island, Bermuda",32.3667,-64.6333,2.0
+"watkins:33.0,-118.0",watkins,WHOI Watkins,"San Pedro Channel, Santa Catalina Island, California",33.0,-118.0,60.0
+"watkins:33.0,-119.0",watkins,WHOI Watkins,"10 mi. SE of San Pedro Light, Santa Cruz Island, California",33.0,-119.0,60.0
+"watkins:33.0,-17.0",watkins,WHOI Watkins,Madeira,33.0,-17.0,60.0
+"watkins:36.0,-4.0",watkins,WHOI Watkins,90 miles E of Gibraltar,36.0,-4.0,60.0
+"watkins:36.0,15.0",watkins,WHOI Watkins,50 mi. NE Malta,36.0,15.0,60.0
+"watkins:37.7,-73.017",watkins,WHOI Watkins,Delaware,37.7,-73.0167,2.0
+"watkins:38.0,-64.0",watkins,WHOI Watkins,,38.0,-64.0,60.0
+"watkins:38.0,-71.0",watkins,WHOI Watkins,,38.0,-71.0,60.0
+"watkins:38.0,-72.0",watkins,WHOI Watkins,,38.0,-72.0,60.0
+"watkins:38.0,-73.0",watkins,WHOI Watkins,North Atlantic,38.0,-73.0,60.0
+"watkins:38.0,-74.0",watkins,WHOI Watkins,,38.0,-74.0,60.0
+"watkins:38.0,12.0",watkins,WHOI Watkins,"Near Panarea, Italy",38.0,12.0,60.0
+"watkins:38.0,13.0",watkins,WHOI Watkins,SE of Ustica,38.0,13.0,60.0
+"watkins:38.0,15.0",watkins,WHOI Watkins,"Near Filicudi, Italy",38.0,15.0,60.0
+"watkins:39.0,-71.0",watkins,WHOI Watkins,,39.0,-71.0,60.0
+"watkins:39.0,-72.0",watkins,WHOI Watkins,,39.0,-72.0,60.0
+"watkins:39.75,-70.833",watkins,WHOI Watkins,"Western North Atlantic, between Block Canyon and Atlantis Canyon",39.75,-70.8333,2.0
+"watkins:39.79,-72.138",watkins,WHOI Watkins,N of Hudson Canyon,39.79,-72.1383,2.0
+"watkins:40.0,-65.0",watkins,WHOI Watkins,,40.0,-65.0,60.0
+"watkins:40.0,-70.0",watkins,WHOI Watkins,E of Stellwagen Bank,40.0,-70.0,60.0
+"watkins:40.0,-71.0",watkins,WHOI Watkins,,40.0,-71.0,60.0
+"watkins:40.0,8.0",watkins,WHOI Watkins,"Near Capo Caccia, Sardinia",40.0,8.0,60.0
+"watkins:41.0,-66.0",watkins,WHOI Watkins,W of Browns Bank,41.0,-66.0,60.0
+"watkins:41.0,-70.0",watkins,WHOI Watkins,"Menemsha Bight, Vineyard Sound, MA",41.0,-70.0,60.0
+"watkins:41.0,-71.0",watkins,WHOI Watkins,"Cape Cod Bay, MA",41.0,-71.0,60.0
+"watkins:41.525,-69.513",watkins,WHOI Watkins,Georges Bank,41.525,-69.5133,2.0
+"watkins:41.642,-69.192",watkins,WHOI Watkins,Georges Bank,41.6417,-69.1917,2.0
+"watkins:41.7,-69.8",watkins,WHOI Watkins,"Nauset Buoy, MA",41.7,-69.8,2.0
+"watkins:42.0,-61.0",watkins,WHOI Watkins,Western North Atlantic,42.0,-61.0,60.0
+"watkins:42.0,-65.0",watkins,WHOI Watkins,"Off Baccaro Bank, N.S.",42.0,-65.0,60.0
+"watkins:42.0,-67.0",watkins,WHOI Watkins,North Atlantic,42.0,-67.0,60.0
+"watkins:42.0,-70.0",watkins,WHOI Watkins,"Cape Cod Bay, MA",42.0,-70.0,60.0
+"watkins:42.0,-71.0",watkins,WHOI Watkins,"Vineyard Sound, Ma.",42.0,-71.0,60.0
+"watkins:42.217,-70.038",watkins,WHOI Watkins,Georges Bank,42.2167,-70.0383,2.0
+"watkins:42.217,-70.08",watkins,WHOI Watkins,Georges Bank,42.2167,-70.08,2.0
+"watkins:42.233,-70.033",watkins,WHOI Watkins,Stellwagen Bank,42.2333,-70.0333,2.0
+"watkins:42.233,-70.217",watkins,WHOI Watkins,"Georges Bank, MA",42.2333,-70.2167,2.0
+"watkins:42.243,-70.075",watkins,WHOI Watkins,Georges Bank,42.2433,-70.075,2.0
+"watkins:42.252,-70.095",watkins,WHOI Watkins,Georges Bank,42.2517,-70.095,2.0
+"watkins:42.253,-70.1",watkins,WHOI Watkins,Georges Bank,42.2533,-70.1,2.0
+"watkins:42.257,-69.992",watkins,WHOI Watkins,Georges Bank,42.2567,-69.9917,2.0
+"watkins:42.283,-70.083",watkins,WHOI Watkins,Georges Bank,42.2833,-70.0833,2.0
+"watkins:42.292,-70.042",watkins,WHOI Watkins,Georges Bank,42.2917,-70.0417,2.0
+"watkins:42.292,-70.238",watkins,WHOI Watkins,Stellwagen Bank,42.2917,-70.2383,2.0
+"watkins:42.3,-67.917",watkins,WHOI Watkins,SE of Browns Bank,42.3,-67.9167,2.0
+"watkins:42.303,-70.103",watkins,WHOI Watkins,Georges Bank,42.3033,-70.1033,2.0
+"watkins:42.322,-70.09",watkins,WHOI Watkins,Georges Bank,42.3217,-70.09,2.0
+"watkins:42.333,-67.833",watkins,WHOI Watkins,"Northern edge of Georges Bank, western North Atlantic",42.3333,-67.8333,2.0
+"watkins:42.348,-70.073",watkins,WHOI Watkins,Georges Bank,42.3483,-70.0733,2.0
+"watkins:42.36,-70.325",watkins,WHOI Watkins,N end of Stellwagen Bank,42.36,-70.325,2.0
+"watkins:42.633,-61.85",watkins,WHOI Watkins,"Sable Island, Nova Scotia",42.6333,-61.85,2.0
+"watkins:42.65,-61.867",watkins,WHOI Watkins,"South of Sable Island, North Atlantic",42.65,-61.8667,2.0
+"watkins:43.0,-123.0",watkins,WHOI Watkins,"Vancouver, British Columbia",43.0,-123.0,60.0
+"watkins:43.0,-58.0",watkins,WHOI Watkins,"Gully, SE Sable I., Canada",43.0,-58.0,60.0
+"watkins:43.0,-59.0",watkins,WHOI Watkins,"Gully, SE Sable I., Canada  BD",43.0,-59.0,60.0
+"watkins:43.0,-62.0",watkins,WHOI Watkins,W of Browns Bank,43.0,-62.0,60.0
+"watkins:43.0,-65.0",watkins,WHOI Watkins,S of Nova Scotia,43.0,-65.0,60.0
+"watkins:43.0,-70.0",watkins,WHOI Watkins,"Cape Porpoise, Maine",43.0,-70.0,60.0
+"watkins:43.0,10.0",watkins,WHOI Watkins,"Near Capraia, Italy",43.0,10.0,60.0
+"watkins:43.0,8.0",watkins,WHOI Watkins,"Near San Remo, Italy",43.0,8.0,60.0
+"watkins:43.017,-70.167",watkins,WHOI Watkins,Gulf of Maine,43.0167,-70.1667,2.0
+"watkins:44.0,-64.0",watkins,WHOI Watkins,"Halifax, Nova Scotia",44.0,-64.0,60.0
+"watkins:44.0,15.0",watkins,WHOI Watkins,"Near Losinij, Yugoslavia",44.0,15.0,60.0
+"watkins:45.0,-66.0",watkins,WHOI Watkins,"Bay of Fundy, near Wolves Is.",45.0,-66.0,60.0
+"watkins:45.0,-67.0",watkins,WHOI Watkins,"NW tip of Deer Island, New Brunswick, Canada",45.0,-67.0,60.0
+"watkins:47.0,-62.0",watkins,WHOI Watkins,"St. Lawrence River, Canada",47.0,-62.0,60.0
+"watkins:47.0,-70.0",watkins,WHOI Watkins,"Ile aux Coudres, PQ, Canada",47.0,-70.0,60.0
+"watkins:47.417,-70.417",watkins,WHOI Watkins,"Ile aux Coudres, PQ, Canada",47.4167,-70.4167,2.0
+"watkins:47.533,-53.533",watkins,WHOI Watkins,"Dildo Arm, Trinity Bay, Newfoundland, Canada",47.5333,-53.5333,2.0
+"watkins:48.0,-123.0",watkins,WHOI Watkins,"Saanich Inlet, Victoria, Vancouver Island, British Columbia, Canada",48.0,-123.0,60.0
+"watkins:48.0,-53.0",watkins,WHOI Watkins,"Trinity Bay, Newfoundland",48.0,-53.0,60.0
+"watkins:48.0,-69.0",watkins,WHOI Watkins,"Baie Ste. Catherine, Canada",48.0,-69.0,60.0
+"watkins:48.0,-70.0",watkins,WHOI Watkins,"Baie Ste. Catherine, CanadaX ;  Saguenay River, Canada",48.0,-70.0,60.0
+"watkins:49.0,-123.0",watkins,WHOI Watkins,"Vancouver, British Columbia",49.0,-123.0,60.0
+"watkins:49.0,-67.0",watkins,WHOI Watkins,,49.0,-67.0,60.0
+"watkins:60.0,-148.0",watkins,WHOI Watkins,"Three to four miles N. of Crafton Is., Prince William Sound, Alaska",60.0,-148.0,60.0
+"watkins:60.533,-147.958",watkins,WHOI Watkins,"1 mi. N of Crafton Island, Alaska",60.5333,-147.9583,2.0
+"watkins:66.0,-169.0",watkins,WHOI Watkins,Bering Strait,66.0,-169.0,60.0
+"watkins:68.0,16.0",watkins,WHOI Watkins,"Kikvika, Norway",68.0,16.0,60.0
+"watkins:69.0,-16.0",watkins,WHOI Watkins,"Andenes, Norway",69.0,-16.0,60.0
+"watkins:70.0,-78.0",watkins,WHOI Watkins,"Koluktoo Bay, N. Baffin Island",70.0,-78.0,60.0
+"watkins:71.0,-157.0",watkins,WHOI Watkins,"Barrow, Alaska",71.0,-157.0,60.0
+"watkins:71.0,-40.0",watkins,WHOI Watkins,"80 mi. south of Martha's Vineyard, Massachusetts",71.0,-40.0,60.0
+"watkins:72.0,-160.0",watkins,WHOI Watkins,"W Pt. Barrow, Alaska",72.0,-160.0,60.0
+"watkins:73.0,-78.0",watkins,WHOI Watkins,"2 mi. N of Pond Inlet, Baffin Island, Canada",73.0,-78.0,60.0
+"watkins:74.0,-105.0",watkins,WHOI Watkins,"E Cumins Inlet, Stratton Is., Canada",74.0,-105.0,60.0
+"watkins:74.0,-85.0",watkins,WHOI Watkins,"E Cumins Inlet, Stratton Is.",74.0,-85.0,60.0
+"watkins:75.0,-75.0",watkins,WHOI Watkins,"N tip of Baffin Island, N.W.T., Canada",75.0,-75.0,60.0
+dclde:BarkleyCanyon,dclde,ONC,Barkley Canyon (ONC),48.43,-126.17,1.0
+dclde:BoundaryPass,dclde,JASCO_VFPA,Boundary Pass,48.76,-123.07,1.0
+dclde:Cpe_Elz,dclde,SIO,Cape Elizabeth HARP,47.36,-124.68,1.0
+dclde:Field_HTI,dclde,UAF_NGOS,Kenai Fjords / Prince William Sound (vessel-based),60.15,-147.59,50.0
+dclde:Field_SondTrap,dclde,UAF_NGOS,Kenai Fjords / Prince William Sound (vessel-based),60.15,-147.59,50.0
+dclde:HE_67391498,dclde,UAF_NGOS,"Hinchinbrook Entrance, PWS",60.31,-146.97,5.0
+dclde:HE_67424266,dclde,UAF_NGOS,"Hinchinbrook Entrance, PWS",60.31,-146.97,5.0
+dclde:HaroStraitNorth,dclde,JASCO_VFPA,Haro Strait Northbound,48.52,-123.19,1.0
+dclde:HaroStraitSouth,dclde,JASCO_VFPA,Haro Strait Southbound,48.52,-123.21,1.0
+dclde:KB_5354,dclde,UAF_NGOS,Kachemak Bay,59.88,-151.85,5.0
+dclde:KB_67383303,dclde,UAF_NGOS,Kachemak Bay,59.88,-151.85,5.0
+dclde:KB_67424266,dclde,UAF_NGOS,Kachemak Bay,59.88,-151.85,5.0
+dclde:LimeKiln,dclde,SMRUConsulting,"Lime Kiln Point, San Juan Island",48.51,-123.15,1.0
+dclde:MS_5360,dclde,UAF_NGOS,"Montague Strait, PWS",60.18,-147.82,5.0
+dclde:MS_671879205,dclde,UAF_NGOS,"Montague Strait, PWS",60.18,-147.82,5.0
+dclde:MS_6897,dclde,UAF_NGOS,"Montague Strait, PWS",60.18,-147.82,5.0
+dclde:Quin_Can,dclde,SIO,Quinault Canyon HARP,47.5,-125.35,1.0
+dclde:RB_335826997,dclde,UAF_NGOS,Resurrection Bay,59.73,-149.53,5.0
+dclde:RB_67424266,dclde,UAF_NGOS,Resurrection Bay,59.73,-149.53,5.0
+dclde:StraitofGeorgia,dclde,JASCO_VFPA_ONC,Strait of Georgia (ONC node),49.04,-123.32,1.0
+dclde:Tekteksen,dclde,SIMRES,"Tekteksen, Saturna Island",48.78,-123.05,1.0
+dclde:bush_point,dclde,OrcaSound,"Bush Point, Whidbey Island",48.03,-122.61,1.0
+dclde:orcasound_lab,dclde,OrcaSound,"Orcasound Lab, Haro Strait",48.52,-123.16,1.0
+dclde:port_townsend,dclde,OrcaSound,Port Townsend,48.14,-122.76,1.0
+aad:BallenyIslands2015,aad,AAD / IWC-SORP,Balleny Islands 2015 (Southern Ocean mooring),-65.3557,167.9115,1.0
+aad:ElephantIsland2013Aural,aad,AAD / IWC-SORP,Elephant Island 2013 (Southern Ocean mooring),-61.0147,-55.9755,1.0
+aad:ElephantIsland2014,aad,AAD / IWC-SORP,Elephant Island 2014 (Southern Ocean mooring),-61.0147,-55.9755,1.0
+aad:Greenwich64S2015,aad,AAD / IWC-SORP,G64 2015 (Southern Ocean mooring),-64.0053,0.0037,1.0
+aad:MaudRise2014,aad,AAD / IWC-SORP,Maud Rise 2014 (Southern Ocean mooring),-65.0,2.5,1.0
+aad:RossSea2014,aad,AAD / IWC-SORP,Ross sea 2014 (Southern Ocean mooring),-75.0198,164.5918,1.0
+aad:casey2014,aad,AAD / IWC-SORP,Casey 2014 (Southern Ocean mooring),-63.7955,111.7872,1.0
+aad:casey2017,aad,AAD / IWC-SORP,Casey 2017 (Southern Ocean mooring),-63.7955,111.7872,1.0
+aad:kerguelen2005,aad,AAD / IWC-SORP,S Kerguelen 2005 (Southern Ocean mooring),-62.5907,81.2607,1.0
+aad:kerguelen2014,aad,AAD / IWC-SORP,S Kerguelen 2014 (Southern Ocean mooring),-62.3802,81.7968,1.0
+aad:kerguelen2015,aad,AAD / IWC-SORP,S Kerguelen 2015 (Southern Ocean mooring),-62.3802,81.7968,1.0
