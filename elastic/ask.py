@@ -163,8 +163,11 @@ def main():
             print(f"{h['score']:.3f}  {h['id']}  {h.get('species'):28s} {h.get('description', '')[:100]}")
         return
     if a.anomalies:
-        for x in es.anomalies():
+        recs = es.anomalies()
+        for x in recs:
             print(f"{x['timestamp']}  score {x['score']:5.1f}  {x['detector']} [{x['by']}]  typical {x['typical']} -> actual {x['actual']}")
+        if not recs:
+            print("no anomalies yet (the job needs an ML node and a few minutes of windows; `setup.py --status` shows its state)")
         return
 
     import anthropic

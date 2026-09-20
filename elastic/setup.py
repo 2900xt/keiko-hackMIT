@@ -37,6 +37,15 @@ RULE_ESQL = ('FROM keiko-detections | WHERE species == "North Atlantic right wha
 
 
 # ---- Elasticsearch side -------------------------------------------------------
+def has_ml_node(es):
+    """True when some node carries the `ml` role (the licence flag alone does not mean a job can open)."""
+    try:
+        nodes = es.es.nodes.info(filter_path="nodes.*.roles").body["nodes"]
+        return any("ml" in n.get("roles", []) for n in nodes.values())
+    except Exception:
+        return False
+
+
 def has_ml(es):
     try:
         info = es.es.xpack.info().body
@@ -175,6 +184,8 @@ def status(es):
         js = es.es.ml.get_job_stats(job_id=JOB_ID).body["jobs"][0]
         fs = es.es.ml.get_datafeed_stats(datafeed_id=f"datafeed-{JOB_ID}").body["datafeeds"][0]
         print(f"ML job {JOB_ID}: {js['state']}, datafeed {fs['state']}, {js['data_counts']['processed_record_count']} records processed")
+        if js["state"] != "opened" and not has_ml_node(es):
+            print("   (no ML node in this deployment: Cloud console > Edit > add Machine Learning instances, then rerun setup.py)")
         for a in es.anomalies(JOB_ID, min_score=30, size=5):
             print(f"   anomaly {a['timestamp']} score {a['score']} {a['detector']} by {a['by']}: typical {a['typical']} actual {a['actual']}")
     except Exception as e:

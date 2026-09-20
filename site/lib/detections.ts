@@ -19,7 +19,7 @@ export interface Detection {
   sweep: number;       // Hz over the call
   duration_s: number;
   live: boolean;
-  source?: string;     // "field" | "synthetic" for archived rows
+  source?: string;     // "field" | "replay" | "synthetic" for archived rows
   spectrogram?: string;
   clip?: string;
   species?: string;
@@ -31,7 +31,7 @@ export interface Detection {
 export interface ArchiveRow {
   id: string; buoy_id: string; timestamp_utc: string; latitude: number; longitude: number;
   confidence: number; species?: string; peak_hz?: number; duration_s: number; sample_rate_hz?: number;
-  clip_path: string; spectrogram_path: string; source: "field" | "synthetic"; notes?: string;
+  clip_path: string; spectrogram_path: string; source: "field" | "replay" | "synthetic"; notes?: string;
 }
 export interface Archive { generated_utc: string; count: number; detections: ArchiveRow[] }
 

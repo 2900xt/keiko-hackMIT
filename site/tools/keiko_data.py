@@ -119,17 +119,20 @@ def render_spectrogram(wav_path, png_path, fmax=1000.0, width=288, height=96):
     rows = np.stack([np.interp(hz_grid, f, S[:, j]) for j in range(S.shape[1])], axis=1)  # (height, time)
     cols = np.linspace(0, rows.shape[1] - 1, width)
     img = np.stack([np.interp(cols, np.arange(rows.shape[1]), rows[i]) for i in range(height)])
-    lo, hi = np.percentile(img, 5), np.percentile(img, 99.5)
+    # floor at the median (the noise floor of a real recording) so only what rises above it gets colour
+    lo, hi = np.percentile(img, 70), np.percentile(img, 99.5)
     img = np.clip((img - lo) / max(hi - lo, 1e-6), 0, 1)
     Image.fromarray(sea_rgba(img)[::-1], "RGBA").save(png_path)  # low frequency at the bottom
 
 
-def peak_hz(wav_path, fmax=1000.0):
+def peak_hz(wav_path, fmin=20.0, fmax=1000.0):
+    """Loudest bin between fmin and fmax; below ~20 Hz is DC drift and cable rumble, not a call."""
     import numpy as np
     sr, x = read_wav(wav_path)
+    x = x - x.mean()
     spec = np.abs(np.fft.rfft(x * np.hanning(len(x))))
     freqs = np.fft.rfftfreq(len(x), 1 / sr)
-    spec[freqs > fmax] = 0
+    spec[(freqs < fmin) | (freqs > fmax)] = 0
     return float(freqs[spec.argmax()])
 
 

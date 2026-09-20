@@ -17,10 +17,21 @@ export default function Landing() {
           Keiko
         </a>
         <h1 className="hero-title">Low-cost acoustic buoys for monitoring whales in the waters you protect.</h1>
+        <p className="hero-sub">
+          A piezo hydrophone on an Arduino UNO Q hears the harbour; a whale CNN names the species; Elasticsearch makes every
+          call searchable, mappable, and worth an alert when a right whale is on the shipping lane.
+        </p>
         <div className="hero-cta">
           <a className="btn" href="app/">Open the map</a>
+          <a className="btn btn-quiet" href="app/#db">Detection database</a>
           <a className="btn btn-quiet" href={REPO}>GitHub</a>
         </div>
+        <dl className="hero-stats" aria-label="At a glance">
+          <div><dt>22</dt><dd>species classes</dd></div>
+          <div><dt>126k</dt><dd>training clips</dd></div>
+          <div><dt>3</dt><dd>hydrophone nodes</dd></div>
+          <div><dt>0.96</dt><dd>right-whale F1</dd></div>
+        </dl>
       </div>
     </main>
   );

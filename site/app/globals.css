@@ -257,6 +257,7 @@ main:focus { outline: none; }
 .detail-facts dd { margin: 2px 0 0; font-family: var(--mono); font-size: var(--fs-md); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .detail-facts dd .sub { display: block; font-family: var(--font); font-size: var(--fs-sm); color: var(--ink-2); margin-top: 1px; }
 .detail-facts .conf-bar { width: 96px; }
+.detail-facts dd.species { color: var(--accent-strong); font-weight: 500; }
 .detail-nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 24px; border-top: 1px solid var(--rule); background: var(--paper-2); font-size: var(--fs-sm); color: var(--ink-2); }
 .detail-nav .btn-quiet:disabled { opacity: .4; cursor: default; }
 .detail-nav .btn-quiet:disabled:hover { background: transparent; border-color: var(--rule-strong); }
@@ -330,7 +331,13 @@ kbd { font-family: var(--mono); font-size: var(--fs-xs); padding: 1px 5px; borde
 .hero { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; text-align: center; max-width: 520px; }
 .hero .wordmark { margin-bottom: 28px; }
 .hero-title { margin: 0; font-size: 26px; font-weight: 500; letter-spacing: -0.02em; line-height: 1.3; text-wrap: balance; }
+.hero-sub { margin: 16px 0 0; font-size: var(--fs-md); line-height: 1.55; color: var(--ink-2); text-wrap: pretty; }
 .hero-cta { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 28px; }
+.hero-stats { display: flex; gap: 0; margin: 36px 0 0; padding: 0; }
+.hero-stats div { padding: 0 20px; text-align: center; }
+.hero-stats div + div { border-left: 1px solid var(--rule-strong); }
+.hero-stats dt { font-family: var(--mono); font-size: var(--fs-xl); font-weight: 500; letter-spacing: -0.02em; color: var(--ink); font-variant-numeric: tabular-nums; }
+.hero-stats dd { margin: 4px 0 0; white-space: nowrap; font-size: var(--fs-xs); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
 .waves { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 42vh; min-height: 220px; pointer-events: none; }
 .wave { fill: var(--accent); }
 .wave-1 { opacity: .05; animation: drift 26s linear infinite; }
@@ -340,4 +347,8 @@ kbd { font-family: var(--mono); font-size: var(--fs-xs); padding: 1px 5px; borde
 @media (max-width: 960px) {
   .landing { padding: 40px 16px; }
   .hero-title { font-size: 21px; }
+  .hero-sub { font-size: var(--fs-sm); }
+  .hero-stats { flex-wrap: wrap; justify-content: center; row-gap: 16px; }
+  .hero-stats div { padding: 0 14px; }
+  .hero-stats dt { font-size: var(--fs-lg); }
 }

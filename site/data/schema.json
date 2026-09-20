@@ -17,7 +17,7 @@
     "sample_rate_hz":   { "type": "integer" },
     "clip_path":        { "type": "string", "description": "16-bit mono PCM WAV" },
     "spectrogram_path": { "type": "string", "description": "PNG, mel axis 0-1 kHz, low frequency at bottom" },
-    "source":           { "type": "string", "enum": ["field", "synthetic"] },
+    "source":           { "type": "string", "enum": ["field", "replay", "synthetic"] },
     "notes":            { "type": "string" }
   }
 }

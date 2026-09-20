@@ -388,7 +388,7 @@ def main():
     ap.add_argument("--out", default=str(pathlib.Path(__file__).resolve().parent / "out"))
     ap.add_argument("--archive", action="store_true", help="add events to site/data via keiko_data.py")
     ap.add_argument("--elastic", action="store_true", help="ship windows + events to Elasticsearch (elastic/.env)")
-    ap.add_argument("--source", default="field", choices=["field", "synthetic"], help="source column for --archive (use synthetic for replays/tests)")
+    ap.add_argument("--source", default="field", choices=["field", "replay", "synthetic"], help="source column for --archive (replay = a real recording played through replay_wav.py, synthetic = generated)")
     ap.add_argument("--quiet", action="store_true", help="only print events")
     ap.add_argument("--server", metavar="WS_URL", help="stream windows, audio and events to server/keiko_server.py, e.g. ws://127.0.0.1:8765")
     a = ap.parse_args()

@@ -262,7 +262,9 @@ class KeikoES:
 
     def anomalies(self, job_id="keiko-soundscape", min_score=50, size=20):
         """Latest ML records above `min_score` (setup.py creates the job)."""
-        r = self.es.ml.get_records(job_id=job_id, record_score=min_score, size=size, sort="timestamp", desc=True).body
+        # ES 9 rejects `size` as a query parameter: paging goes in the body as `page`
+        r = self.es.ml.get_records(job_id=job_id, record_score=min_score, page={"from": 0, "size": size},
+                                   sort="timestamp", desc=True).body
         return [{"timestamp": iso(x["timestamp"] / 1000), "score": round(x["record_score"], 1),
                  "detector": x.get("function_description") or x.get("function"), "field": x.get("field_name"),
                  "by": x.get("by_field_value"), "typical": x.get("typical", [None])[0], "actual": x.get("actual", [None])[0]}

@@ -10,10 +10,15 @@ const ICON = "data:image/svg+xml," + encodeURIComponent(
   "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='16' fill='#0a1420'/><text x='16' y='23' font-size='19' text-anchor='middle'>🐋</text></svg>"
 );
 
+const DESCRIPTION = "Low-cost acoustic buoys: a piezo hydrophone on an Arduino UNO Q, a whale CNN, and Elasticsearch turn " +
+  "underwater sound into a live map, a searchable detection database and right-whale alerts. HackMIT 2026.";
+
 export const metadata: Metadata = {
   title: "Keiko",
-  description: "Live whale detections from the Keiko acoustic buoys.",
+  description: DESCRIPTION,
   icons: { icon: ICON },
+  openGraph: { title: "Keiko — acoustic whale buoys", description: DESCRIPTION, type: "website", siteName: "Keiko" },
+  twitter: { card: "summary", title: "Keiko — acoustic whale buoys", description: DESCRIPTION },
 };
 export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover", themeColor: "#0a1420" };
 

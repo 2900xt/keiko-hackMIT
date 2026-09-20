@@ -109,6 +109,11 @@ export default function DetectionDetail({ d, origin, player, index, count, onSte
 
       <dl className="detail-facts">
         <div>
+          <dt className="eyebrow">Species</dt>
+          <dd className={d.species && d.species !== "unknown" ? "species" : ""}>{d.species && d.species !== "unknown" ? d.species : "unknown"}
+            {d.species && d.species !== "unknown" && <span className="sub">whale CNN v2 · 22 classes</span>}</dd>
+        </div>
+        <div>
           <dt className="eyebrow">Confidence</dt>
           <dd><span className="conf"><span className="conf-bar" aria-hidden="true"><i style={{ width: pct + "%" }} /></span>{pct}%</span></dd>
         </div>
@@ -130,7 +135,7 @@ export default function DetectionDetail({ d, origin, player, index, count, onSte
         </div>
         <div>
           <dt className="eyebrow">Record</dt>
-          <dd>{d.id}<span className="sub">{d.live ? "heard this session, not yet in the archive" : (d.source === "synthetic" ? "generated row in " : "field recording in ") + "data/detections.csv"}</span></dd>
+          <dd>{d.id}<span className="sub">{d.live ? "heard this session, not yet in the archive" : (d.source === "synthetic" ? "generated row in " : d.source === "replay" ? "recording replayed through the pipeline, in " : "field recording in ") + "data/detections.csv"}</span></dd>
         </div>
       </dl>
 
