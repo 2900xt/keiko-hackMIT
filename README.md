@@ -19,6 +19,7 @@ hydrophone B ──> ESP32-S3 DevKitC ┘     detector → classifier → embedd
 - `elastic/` — index mappings, Kibana saved objects, ES|QL queries, agent
 - `training/` — dataset prep + model training scripts
 - `hardware/` — buoy enclosure: OpenSCAD source, STLs, print previews, design review notes
+- `server/` — central server: localizes each detection across the buoy array (TDOA; two of the three buoys are simulated), keeps tracks, streams to the site over a WebSocket
 - `site/` — public website (Next.js, static export): live map of whale detections across buoys (draft, one buoy on synthetic data)
 
 ## Try it
