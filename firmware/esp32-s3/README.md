@@ -91,8 +91,14 @@ Expect a line per second like:
 fs= 8000.0Hz blocks/s= 31 dc=1.71V rms=  4.2mV peak= 31.0mV mcu_drops=0 missing=0 crc_bad=0
 ```
 
-To run the pipeline on another machine, `make start UDP_HOST=<its ip>`; `pipeline/`'s `make live` picks
-the node up on 5005 the same way it does the UNO Q's.
+The pipeline itself is started by hand -- `pipeline/`'s `make live` is UNO Q-specific (it drives the
+board over adb); `keiko_pipeline.py` just listens on 5005 and keys streams by node id, so:
+
+```bash
+cd ../../pipeline && ../.venv/bin/python keiko_pipeline.py --port 5005     # in another terminal (make venv there once)
+```
+
+To run the pipeline on another machine, `make start UDP_HOST=<its ip>`.
 
 ### Record a clip and run it through the whale CNN
 
@@ -118,11 +124,11 @@ cp sketch/wifi_config.h.example sketch/wifi_config.h && $EDITOR sketch/wifi_conf
 
 The board joins the network, and for every block sends the same `KEIK` datagram `python/main.py`
 would have built -- `fs` measured on the board, `t_ns` = board µs since boot × 1000 -- straight to
-`KEIKO_UDP_HOST:KEIKO_UDP_PORT`. `pipeline/make live` / `keiko_pipeline.py` need no change. The serial
+`KEIKO_UDP_HOST:KEIKO_UDP_PORT`. `keiko_pipeline.py` needs no change. The serial
 frames keep flowing whenever a host is attached, so `make start` still works for a health line during
 setup; unplugged, the sender skips serial so a stalled USB write can never hold up the Wi-Fi path.
 Venue Wi-Fi usually isolates clients from each other -- a phone hotspot is the reliable choice
-(`make ip` in `../../pipeline` or `ipconfig getifaddr en0` gives the laptop's address on it).
+(`python3 ../../pipeline/netinfo.py` or `ipconfig getifaddr en0` gives the laptop's address on it).
 `make check-wifi` compiles this variant without touching your `wifi_config.h`.
 
 ### Settings
