@@ -5,8 +5,12 @@
 
   // map
   const map = L.map('map').setView([feed.buoy.lat, feed.buoy.lon], 15);
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  // Esri light gray canvas: minimal, no API key. Labels come from the separate reference layer.
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 16, attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
+  }).addTo(map);
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 16, pane: 'overlayPane',
   }).addTo(map);
   const marker = L.marker([feed.buoy.lat, feed.buoy.lon], {
     icon: L.divIcon({ className: '', html: '<div class="buoy-icon"></div>', iconSize: [14, 14], iconAnchor: [7, 7] }),
