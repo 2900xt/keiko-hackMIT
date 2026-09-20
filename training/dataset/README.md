@@ -102,6 +102,17 @@ tr = m.index[m.split == "train"].values
 x, y = X[tr[:256]].astype("float32")[:, None], m.label_id.values[tr[:256]]   # (256, 1, 128, 301)
 ```
 
+### v2 features (whales + NOT-a-whale classes) — `features/v2_32k_mel128_3s/`
+
+```bash
+python3 scripts/extract_features_v2.py     # ~90 s; 71,522 windows, 22 classes, 5.1 GB windows.npy (not in git)
+```
+Same tensor format as above, but: labels are species for baleen + non-dolphin toothed whales, **genus** for dolphins,
+`other_baleen`/`other_toothed`, plus `no_whale_noise` and `no_whale_biophony`; a class needs ≥100 clips and ≥4 recording
+groups; each class is capped at 6,000 windows drawn evenly across recording groups; z-scoring is per recording (whole clip)
+rather than per window. `manifest.csv` has a `hierarchy` column (baleen / toothed / no_whale) and keeps the orca ecotype in
+`taxon_label`. This is what `../whale_cnn/models/whale_cnn_v2.pt` was trained on.
+
 ## Right whale tensors (Kaggle clips only)
 
 Two smaller feature files built straight from the Kaggle `whale-detection-challenge.zip` (30,000 labeled 2 s / 2 kHz clips,

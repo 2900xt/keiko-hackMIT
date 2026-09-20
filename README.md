@@ -14,10 +14,29 @@ hydrophone B ──> ESP32-S3 DevKitC ┘     detector → classifier → embedd
 
 - `firmware/esp32-s3/` — hydrophone B: I2S/ADC capture → UDP stream
 - `firmware/nrf7002/` — hydrophone A: SAADC capture → UDP stream (Zephyr / nRF Connect SDK)
+- `firmware/unoq/` — hydrophone C: UNO Q's own MCU samples a piezo → Bridge → UDP (see its README for the analog front end)
 - `pipeline/` — Python: UDP receiver, detector, classifier, embeddings, TDOA, Elasticsearch ingest
 - `elastic/` — index mappings, Kibana saved objects, ES|QL queries, agent
 - `training/` — dataset prep + model training scripts
 - `hardware/` — buoy enclosure: OpenSCAD source, STLs, print previews, design review notes
+- `site/` — public website (Next.js, static export): live map of whale detections across buoys (draft, one buoy on synthetic data)
+
+## Try it
+
+```bash
+cd pipeline && make venv && make test && make demo      # no hardware: humpback song -> detections
+```
+
+```bash
+cd firmware/unoq && make start && make logs            # UNO Q on USB-C: flash the node, watch the health line
+```
+
+```bash
+cd pipeline && make live                               # node -> this laptop over Wi-Fi -> whale CNN -> events
+```
+
+`make live ARGS="--archive"` writes detections into `site/data/`, which the website reads. Details in
+`pipeline/README.md` and `firmware/unoq/README.md`.
 
 ## Team
 

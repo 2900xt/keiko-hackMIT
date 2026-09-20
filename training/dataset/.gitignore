@@ -6,3 +6,5 @@ audio/
 *.wav
 features/**/*.npy
 features/**/*.npz
+marine_sounds.sqlite
+catalog/clips.csv

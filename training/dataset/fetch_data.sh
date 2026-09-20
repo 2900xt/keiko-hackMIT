@@ -72,5 +72,5 @@ aria2c -i raw/dclde2027_kw/aria_urls.txt -d raw/dclde2027_kw -x 8 -s 8 -j 6 -c -
 #    echo '{"endpoint":"https://transfer.data.aad.gov.au","access":"<KEY>","secret":"<SECRET>","bucket":"aadc-datasets","prefix":"AcousticTrends_BlueFinLibrary/"}' > aad_creds.json
 #    AAD_CREDS=aad_creds.json python3 scripts/download_aad_bluefin.py
 
-# 10. Build
+# 10. Build (or just unpack the shipped DB: gunzip -k marine_sounds.sqlite.gz catalog/clips.csv.gz)
 python3 scripts/build_db.py
