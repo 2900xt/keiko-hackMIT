@@ -188,7 +188,7 @@ class ServerLink:
 class Detector:
     def __init__(self, a, model, classes, spec, buoy):
         self.a, self.model, self.classes, self.spec, self.buoy = a, model, classes, spec, buoy
-        self.win_hist = collections.deque(maxlen=64)  # (t_end, label, conf, is_whale)
+        self.win_hist = collections.deque(maxlen=64)  # (t_end, label, conf, is_whale, embedding, probs, audio)
         self.event = None
         self.n_windows = 0; self.t_start = time.time()
         self.out = pathlib.Path(a.out); self.out.mkdir(parents=True, exist_ok=True)
@@ -219,12 +219,14 @@ class Detector:
         y = st.last(self.a.win)
         if y is None:
             return
-        label, conf, top, ptop = self.classify(y, st.fs)
+        label, conf, top, ptop, p, emb = self.classify(y, st.fs)
         self.n_windows += 1
         whale = not label.startswith("no_whale")
         if not self.a.quiet:
             print(f"{utc(t_end)}  {'WHALE ' if whale else '      '}{label:28s} {conf:.2f}   (top {top} {ptop:.2f})", flush=True)
-        self.win_hist.append((t_end, label, conf, whale))
+        audio = audio_features(y, st.fs) if self.es else None
+        probs = dict(zip(self.classes, p.tolist())) if self.es else None
+        self.win_hist.append((t_end, label, conf, whale, emb, probs, audio))
         if self.link:
             self.link.send({"type": "window", "ts": utc(t_end), "label": label, "species": COMMON.get(label, label) if whale else None,
                             "conf": round(conf, 3), "whale": whale, "top": top, "top_p": round(ptop, 3), "in_event": self.event is not None})
@@ -234,10 +236,14 @@ class Detector:
             recent = list(self.win_hist)[-self.a.min_windows:]
             if len(recent) == self.a.min_windows and all(w[3] for w in recent):
                 self.event = {"t0": recent[0][0] - self.a.win, "t_last": t_end, "labels": [w[1] for w in recent],
-                              "confs": [w[2] for w in recent], "misses": 0}
+                              "confs": [w[2] for w in recent], "misses": 0, "embs": [w[4] for w in recent],
+                              "probs": [w[5] for w in recent], "audio": [w[6] for w in recent]}
+            self.ship_window(st, t_end, label, conf, whale, top, ptop, probs, audio, in_event=self.event is not None)
             return
+        self.ship_window(st, t_end, label, conf, whale, top, ptop, probs, audio, in_event=True)
         if whale:
             ev["t_last"] = t_end; ev["labels"].append(label); ev["confs"].append(conf); ev["misses"] = 0
+            ev["embs"].append(emb); ev["probs"].append(probs); ev["audio"].append(audio)
         else:
             ev["misses"] += 1
         if ev["misses"] >= self.a.patience or (t_end - ev["t0"]) >= self.a.max_s:
@@ -278,6 +284,11 @@ class Detector:
         with open(self.out / "events.jsonl", "a") as f:
             f.write(json.dumps(rec) + "\n")
         print(f"EVENT {det_id}  {rec['species']}  conf={conf:.2f}  {rec['duration_s']} s  -> {wav}", flush=True)
+        if self.es:
+            probs = {k: float(np.mean([pr[k] for pr in ev["probs"]])) for k in self.classes}
+            self.es.add_detection(self._detection_doc({**rec, "source": self.a.source}, embedding=mean_embedding(ev["embs"]),
+                                                      probs=probs, audio=audio_features(y, st.fs), buoy_name=self.buoy.get("name")))
+            print(f"      -> elasticsearch keiko-detections/{det_id}  (windows shipped: {self.es.stats['windows']}, errors: {self.es.stats['errors']})", flush=True)
         if self.link:
             self.link.send({"type": "detection", "id": det_id, "ts": when, "buoy_id": self.buoy["id"], "lat": self.buoy["lat"],
                             "lon": self.buoy["lon"], "species": rec["species"], "model_class": species, "confidence": rec["confidence"],
@@ -323,6 +334,7 @@ def run_udp(a, det, streams):
         raw = np.frombuffer(data[HDR.size:HDR.size + 2 * n], dtype="<i2")
         st = streams.setdefault(node, Stream())
         now = time.time()
+        st.note_packet(seq)
         st.push(raw, bits, fs, now); pkts += 1
         if link and now >= next_frame:
             next_frame = now + 1 / 15

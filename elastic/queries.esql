@@ -1,0 +1,69 @@
+-- Keiko ES|QL library. Paste into Kibana > Discover (ES|QL mode) or a Lens "ES|QL" panel, or run with
+--   python3 ask.py --esql "$(sed -n '/^-- 1\./,/^$/p' queries.esql | grep -v '^--')"
+-- Each block is one query; blank line separates them.
+
+-- 1. what is on the water right now (last hour), by species
+FROM keiko-detections
+| WHERE @timestamp > NOW() - 1 hour
+| STATS n = COUNT(*), avg_conf = ROUND(AVG(confidence), 2), longest_s = MAX(duration_s) BY species
+| SORT n DESC
+
+-- 2. detections per 15 minutes per buoy (the dashboard's main bar chart)
+FROM keiko-detections
+| STATS n = COUNT(*) BY buoy_id, t = BUCKET(@timestamp, 15 minutes)
+| SORT t
+
+-- 3. soundscape: noise floor + whale window share per buoy per 5 minutes (from the raw windows)
+FROM keiko-windows
+| STATS level_db = ROUND(AVG(audio.rms_db), 1), p95_db = ROUND(PERCENTILE(audio.rms_db, 95), 1),
+        whale_share = ROUND(AVG(CASE(whale, 1.0, 0.0)), 3), centroid_hz = ROUND(AVG(audio.centroid_hz)) BY buoy_id, t = BUCKET(@timestamp, 5 minutes)
+| SORT buoy_id, t
+
+-- 4. when do whales call? detections by hour of day
+FROM keiko-detections
+| EVAL hour = DATE_EXTRACT("hour_of_day", @timestamp)
+| STATS n = COUNT(*), avg_conf = ROUND(AVG(confidence), 2) BY hour
+| SORT hour
+
+-- 5. right whales: the NOAA question (this is also the alert rule)
+FROM keiko-detections
+| WHERE species == "North Atlantic right whale" AND confidence >= 0.7
+| KEEP @timestamp, id, buoy_id, confidence, duration_s, location, fix.err_m
+| SORT @timestamp DESC
+| LIMIT 50
+
+-- 6. messy data: how much of the stream did we lose from each buoy?
+FROM keiko-windows
+| STATS windows = COUNT(*), packets = SUM(net.packets), dropped = SUM(net.dropped_packets) BY buoy_id
+| EVAL loss_pct = ROUND(100.0 * dropped / (packets + dropped), 2)
+
+-- 7. the classifier's second guesses: when it said humpback, what else did it consider?
+FROM keiko-detections
+| WHERE model_class == "Megaptera_novaeangliae"
+| STATS fin = ROUND(AVG(probs.Balaenoptera_physalus), 3), narw = ROUND(AVG(probs.Eubalaena_glacialis), 3),
+        minke = ROUND(AVG(probs.Balaenoptera_acutorostrata), 3), noise = ROUND(AVG(probs.no_whale_noise), 3), n = COUNT(*)
+
+-- 8. sound character per species (tonal vs broadband, where in the band)
+FROM keiko-detections
+| WHERE audio.peak_hz IS NOT NULL
+| STATS peak_hz = ROUND(MEDIAN(audio.peak_hz)), centroid_hz = ROUND(MEDIAN(audio.centroid_hz)),
+        flatness = ROUND(AVG(audio.flatness), 2), n = COUNT(*) BY species
+| SORT n DESC
+
+-- 9. where: centroid of fixes per species and distance from Boston Harbor entrance
+FROM keiko-detections
+| WHERE location IS NOT NULL
+| EVAL km_from_harbor = ROUND(ST_DISTANCE(location, TO_GEOPOINT("POINT(-70.90 42.34)")) / 1000, 1)
+| STATS n = COUNT(*), centre = ST_CENTROID_AGG(location), mean_km = ROUND(AVG(km_from_harbor), 1) BY species
+
+-- 10. windows the classifier was unsure about (candidates for the unknown/anomaly story)
+FROM keiko-windows
+| WHERE whale == false AND top_p < 0.5 AND audio.rms_db > -40
+| STATS n = COUNT(*), level = ROUND(AVG(audio.rms_db), 1), centroid = ROUND(AVG(audio.centroid_hz)) BY top_class, t = BUCKET(@timestamp, 10 minutes)
+| SORT n DESC
+| LIMIT 30
+
+-- 11. field vs synthetic — how the demo data and the real data differ
+FROM keiko-detections
+| STATS n = COUNT(*), conf = ROUND(AVG(confidence), 2), dur = ROUND(AVG(duration_s), 1) BY source, species
+| SORT source, n DESC
