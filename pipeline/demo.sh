@@ -1,6 +1,6 @@
 #!/bin/sh
 # Demo without a board: loop a public-domain humpback song (National Park Service, Glacier Bay) into the pipeline
-# as if a node were streaming it. Ctrl-C stops both. Extra args go to keiko_pipeline.py (e.g. --archive --source synthetic).
+# as if a node were streaming it. Ctrl-C stops both. Extra args go to keiko_pipeline.py (e.g. --archive --source replay).
 HERE=$(cd "$(dirname "$0")" && pwd)
 PY=${PY:-$HERE/../.venv/bin/python}; [ -x "$PY" ] || PY=python3
 CLIP=${CLIP:-$HERE/samples/humpback_nps.mp3}; PORT=${PORT:-5005}

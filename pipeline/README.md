@@ -40,7 +40,7 @@ make demo                         # ctrl-c stops it
 
 `demo.sh` loops the humpback sample through `replay_wav.py` as if a node were streaming it, and runs the pipeline on
 it with `--min_conf 0.6`. Expect a `WHALE Megaptera_novaeangliae` line every 1.5 s during song and an `EVENT …
-humpback whale` line when each bout ends. `make demo ARGS="--archive --source synthetic"` also writes the events into
+humpback whale` line when each bout ends. `make demo ARGS="--archive --source replay"` also writes the events into
 `site/data/` so the website's Database tab shows them (revert or commit that folder afterwards).
 
 The sample is a National Park Service recording from the Glacier Bay hydrophone (public domain, via

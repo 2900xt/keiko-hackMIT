@@ -263,7 +263,7 @@ source, truth inside the radius 96 % of the time. Consecutive fixes of one speci
 <summary><b>Detection database</b> — <code>site/data/</code> (plain files, published with the site)</summary>
 
 `detections.csv` is the source of truth (`id, buoy_id, timestamp_utc, latitude, longitude, confidence, species, peak_hz,
-duration_s, sample_rate_hz, clip_path, spectrogram_path, source ∈ {field, synthetic}, notes`), `detections.json` the typed
+duration_s, sample_rate_hz, clip_path, spectrogram_path, source ∈ {field, replay, synthetic}, notes`), `detections.json` the typed
 copy the site reads, `buoys.csv` the registry, `clips/<id>.wav` 16-bit mono PCM, `spectrograms/<id>.png` a 0–1 kHz mel
 spectrogram in the site's colour ramp with quiet bins transparent, `schema.json` a JSON Schema. `site/tools/keiko_data.py add|rebuild|synth`
 maintains it; `pipeline … --archive` calls `add` per event. Readable straight from
@@ -357,7 +357,7 @@ cd pipeline && make demo          # loops 38 s of NPS humpback song through repl
 ```
 
 Expect `WHALE Megaptera_novaeangliae` every 1.5 s during song and `EVENT … humpback whale` when a bout ends.
-`CLIP=path make demo` for any WAV/FLAC/MP3. `make demo ARGS="--archive --source synthetic"` also writes the events into
+`CLIP=path make demo` for any WAV/FLAC/MP3. `make demo ARGS="--archive --source replay"` also writes the events into
 `site/data/`; `ARGS="--elastic"` indexes them; `ARGS="--server ws://127.0.0.1:8765"` feeds the map.
 
 </details>

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { ageOpacity, RANGE_M, type Detection } from "@/lib/detections";
@@ -35,6 +35,17 @@ export default function MapView({ buoyId, position, detections, hoveredId, focus
   const trackLayer = useRef<L.LayerGroup | null>(null);
   const polylines = useRef(new Map<string, L.Polyline>());
   const fitted = useRef(false);
+  const pendingFit = useRef<L.LatLngBounds | null>(null);
+  // fitBounds on a 0x0 container (the view is display:none, or the hello arrived before layout) computes a
+  // world-level zoom, so the array fit waits until the map has a size.
+  const fitPending = useCallback(() => {
+    const m = map.current, b = pendingFit.current;
+    if (!m || !b || fitted.current) return;
+    m.invalidateSize();
+    if (m.getSize().x < 50 || m.getSize().y < 50) return;
+    fitted.current = true; pendingFit.current = null;
+    m.fitBounds(b);
+  }, []);
 
   useEffect(() => {
     if (!el.current || map.current) return;
@@ -84,10 +95,10 @@ export default function MapView({ buoyId, position, detections, hoveredId, focus
       }).addTo(layer).bindTooltip(b.id + (b.simulated ? " · simulated" : ""), { permanent: true, direction: "right", offset: [12, 0], className: "buoy-label" + (b.simulated ? " sim" : "") });
     }
     if (others.length && !fitted.current) {
-      fitted.current = true;
-      m.fitBounds(L.latLngBounds(buoys.map((b) => [b.lat, b.lon] as [number, number])).pad(0.25));
+      pendingFit.current = L.latLngBounds(buoys.map((b) => [b.lat, b.lon] as [number, number])).pad(0.25);
+      fitPending();
     }
-  }, [buoys, buoyId]);
+  }, [buoys, buoyId, fitPending]);
 
   // Localized calls: an error circle each, and for the newest one a ray from
   // every buoy that heard it (dashed when that arrival is simulated).
@@ -163,7 +174,7 @@ export default function MapView({ buoyId, position, detections, hoveredId, focus
     hovered.current?.openTooltip();
   }, [hoveredId]);
 
-  useEffect(() => { if (active) map.current?.invalidateSize(); }, [active]);
+  useEffect(() => { if (active) { map.current?.invalidateSize(); fitPending(); } }, [active, fitPending]);
 
   useEffect(() => {
     const m = map.current, mk = focus ? markers.current.get(focus.id) : null;
