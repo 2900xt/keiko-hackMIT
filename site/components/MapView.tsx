@@ -2,22 +2,21 @@
 import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { ageOpacity, type Detection } from "@/lib/detections";
-
-const RANGE_M = 300; // nominal hydrophone detection range for the ring
+import { ageOpacity, RANGE_M, type Detection } from "@/lib/detections";
 
 interface Props {
   buoyId: string;
   position: { lat: number; lon: number };
   detections: Detection[];
   hoveredId: string | null;
+  focus: { id: string; n: number } | null; // "show on map": pan to this detection
   active: boolean;
   now: number | null;
 }
 
 // Imperative Leaflet map. Created once; markers are keyed by detection id and
 // added as new rows arrive, so the React tree never re-renders the map itself.
-export default function MapView({ buoyId, position, detections, hoveredId, active, now }: Props) {
+export default function MapView({ buoyId, position, detections, hoveredId, focus, active, now }: Props) {
   const el = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
   const buoy = useRef<L.Marker | null>(null);
@@ -41,7 +40,7 @@ export default function MapView({ buoyId, position, detections, hoveredId, activ
     L.tileLayer(esri + "World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}", {
       maxNativeZoom: 16, maxZoom: 18, pane: "overlayPane", className: "tiles-labels",
     }).addTo(m);
-    range.current = L.circle([position.lat, position.lon], { radius: RANGE_M, color: "#fff", weight: 1.5, dashArray: "5 5", fillColor: "#fff", fillOpacity: 0.06, interactive: false }).addTo(m);
+    range.current = L.circle([position.lat, position.lon], { radius: RANGE_M, color: "#e6eef5", weight: 1.5, dashArray: "5 5", fillColor: "#e6eef5", fillOpacity: 0.06, interactive: false }).addTo(m);
     sightings.current = L.layerGroup().addTo(m);
     buoy.current = L.marker([position.lat, position.lon], {
       icon: L.divIcon({ className: "", html: '<div class="buoy"></div>', iconSize: [16, 16], iconAnchor: [8, 8] }), zIndexOffset: 1000,
@@ -90,6 +89,14 @@ export default function MapView({ buoyId, position, detections, hoveredId, activ
   }, [hoveredId]);
 
   useEffect(() => { if (active) map.current?.invalidateSize(); }, [active]);
+
+  useEffect(() => {
+    const m = map.current, mk = focus ? markers.current.get(focus.id) : null;
+    if (!m || !mk || !active) return;
+    m.invalidateSize();
+    m.flyTo(mk.getLatLng(), Math.max(m.getZoom(), 16), { duration: 0.6 });
+    mk.openTooltip();
+  }, [focus, active]);
 
   return <div id="map" ref={el} />;
 }

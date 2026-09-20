@@ -205,7 +205,7 @@ def run_udp(a, det, streams):
             if now - quiet_since > 10 and now - hinted > 30:
                 hinted = now
                 print(f"no packets for {now - quiet_since:.0f} s. Node side: make logs (fs= line present?), "
-                      f"make retarget UDP_HOST=<this machine's ip>; both on the same network?", flush=True)
+                      f"make retarget UDP_HOST=<this machine's ip>; both on the same network? (make live streams over USB)", flush=True)
             continue
         quiet_since = time.time()
         if addr[0] not in seen:

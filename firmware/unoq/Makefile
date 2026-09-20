@@ -11,6 +11,7 @@
 #   make logs        last 30 lines of the app's output          make follow    stream it
 #   make stop        stop the app                               make shell     shell on the board
 #   make ip          board hostname + IP                        make listen    receive the UDP stream here (see below)
+#   make wifi SSID=<name> PSK=<password>   join that Wi-Fi (e.g. a phone hotspot; the board remembers it)
 #   make record      record DURATION=30 seconds from the hydrophone into recordings/<utc>.wav on this Mac (no restart)
 #   make retarget UDP_HOST=<ip>   send the stream to that machine instead of the board itself (no restart; UDP_HOST=auto to undo)
 #   make status      is the app running?
@@ -50,7 +51,7 @@ else
   PULL   = $(ADB) pull 
 endif
 
-.PHONY: core check venv test deploy start restart stop logs follow shell ip enable-ssh listen record retarget status adb-check
+.PHONY: core check venv test deploy start restart stop logs follow shell ip wifi enable-ssh listen record retarget status adb-check
 
 # ---- Mac-side --------------------------------------------------------------
 core:
@@ -71,7 +72,7 @@ test:
 	$(PYTHON) python/test_node.py
 
 listen:
-	$(PYTHON) python/udp_listen.py $(PORT)
+	$(PYTHON) python/udp_listen.py --port $(PORT)
 
 # ---- board-side ------------------------------------------------------------
 adb-check:
@@ -112,6 +113,13 @@ shell: adb-check
 
 ip: adb-check
 	$(RUN) "hostname; hostname -I"
+
+# Join a Wi-Fi network over USB (NetworkManager on the board keeps it and reconnects on its own afterwards).
+SSID ?=
+PSK  ?=
+wifi: adb-check
+	@test -n "$(SSID)" || { echo "usage: make wifi SSID=<network name> PSK=<password>   (omit PSK for an open network)"; exit 1; }
+	$(RUN) "nmcli dev wifi connect '$(SSID)' $(if $(PSK),password '$(PSK)') && sleep 3 && hostname -I"
 
 # Record DURATION seconds from the hydrophone into recordings/<utc>.wav on this Mac. Captures the UDP stream on the
 # board's Linux side with python/udp_listen.py, so the app keeps running (no restart, no re-flash). Needs

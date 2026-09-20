@@ -13,7 +13,7 @@ node UDP (KEIK packets) ─► 3 s windows, 50% overlap ─► whale CNN v2 ─�
 | `keiko_pipeline.py` | the receiver + classifier + event logic (`--wav` runs it over a file instead of the network) |
 | `replay_wav.py` | streams any WAV as node packets, for demos and tests without a board |
 | `requirements.txt` | torch, librosa, soundfile … (same as `training/whale_cnn`, plus scipy/matplotlib/pillow for `--archive`) |
-| `Makefile`, `live.sh`, `demo.sh`, `netinfo.py` | `make test` / `make demo` / `make live` (see below) |
+| `Makefile`, `live.sh`, `demo.sh`, `netinfo.py`, `usb_relay.py` | `make test` / `make demo` / `make live` (see below) |
 | `test_pipeline.py` | offline regression: noise → no events, humpback sample → humpback event |
 | `samples/humpback_nps.mp3` | 38 s of humpback song, National Park Service, public domain — the demo and test input |
 
@@ -50,9 +50,11 @@ The sample is a National Park Service recording from the Glacier Bay hydrophone 
 ## Live against the UNO Q
 
 Board plugged into this machine over USB-C (control goes over adb), board and machine on the same Wi-Fi (the audio
-comes over UDP). Then:
+comes over UDP). Venue Wi-Fi usually will not do — MIT GUEST puts the board behind a captive portal and isolates
+clients — so use a phone hotspot: join this machine to it, then join the board with
 
 ```bash
+make -C ../firmware/unoq wifi SSID='<hotspot name>' PSK='<password>'
 make live                         # add ARGS="--archive" to write detections to the site database
 ```
 
@@ -65,11 +67,17 @@ make live                         # add ARGS="--archive" to write detections to 
    the board's router).
 3. If the app is not running it runs `make start` there (first time: ~2 min).
 4. Prints the node's health line and starts the pipeline. Within a couple of seconds you should see
-   `receiving from 192.168.x.y`, then one line per 3 s window.
+   `receiving from 192.168.x.y` (or whatever the hotspot hands out), then one line per 1.5 s.
 
 If the pipeline prints `no packets for N s`: check `make -C ../firmware/unoq logs` shows `fs=…` lines (if it stops at
 "App started", power-cycle the board), and that both machines really share a network (`netinfo.py` warns when they do
-not). `make -C ../firmware/unoq retarget UDP_HOST=auto` sends the stream back to the board itself.
+not; `make -C ../firmware/unoq ip` shows the board's). `make -C ../firmware/unoq retarget UDP_HOST=auto` sends the
+stream back to the board itself.
+
+No usable network at all? `VIA=usb make live` carries the stream over the USB cable instead: adb cannot forward
+UDP, so `usb_relay.py node` on the board wraps each datagram in a length prefix and sends it down
+`adb reverse tcp:5006`, and `usb_relay.py host` here unwraps it onto UDP 127.0.0.1:5005 (you then see
+`receiving from 127.0.0.1`). ~7 kB/s, no drops; Ctrl-C removes the relay again.
 
 Offline over a recording (`make record` in `firmware/unoq` makes one):
 

@@ -23,6 +23,7 @@ export type FeedHandler<K extends keyof FeedEvents> = (payload: FeedEvents[K]) =
 
 export interface Feed {
   buoy: Buoy;
+  synthetic: boolean; // true while the feed is generated in the browser; the UI says so
   on<K extends keyof FeedEvents>(type: K, fn: FeedHandler<K>): () => void;
   start(): void;
   stop(): void;
@@ -132,5 +133,5 @@ export function createFeed(): Feed {
   }
   function stop() { timers.forEach(clearInterval); timers = []; }
 
-  return { on, start, stop, backfill, buoy: BUOY };
+  return { on, start, stop, backfill, buoy: BUOY, synthetic: true };
 }
