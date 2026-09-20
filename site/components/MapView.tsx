@@ -27,8 +27,8 @@ export default function MapView({ buoyId, position, detections, hoveredId, focus
   useEffect(() => {
     if (!el.current || map.current) return;
     const m = L.map(el.current, { zoomControl: false, maxZoom: 18 }).setView([position.lat, position.lon], 15);
-    L.control.zoom({ position: "bottomright" }).addTo(m);
-    L.control.scale({ position: "bottomright", imperial: false }).addTo(m);
+    L.control.zoom({ position: "topleft" }).addTo(m);
+    L.control.scale({ position: "topleft", imperial: false }).addTo(m);
     // Esri Dark Gray Canvas (keyless), split so the base can be tinted to the
     // site's navy in CSS (.tiles-base) while the labels stay crisp above it.
     // Native tiles stop at zoom 16; Leaflet upscales them beyond that.

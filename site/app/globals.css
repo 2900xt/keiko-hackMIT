@@ -25,7 +25,7 @@
   --good: #3fbf8f;
   --warn: #e0a83a;
   --bad: #ef6b70;
-  --spec-bg: #000004;
+  --glass: rgba(10, 20, 32, 0.72); /* translucent panels floating over the map */
   --radius: 4px;
   --fs-xs: 11px; --fs-sm: 13px; --fs-md: 15px; --fs-lg: 18px; --fs-xl: 24px; --fs-2xl: 32px;
   --ease-out: cubic-bezier(0.2, 0, 0, 1);
@@ -92,14 +92,14 @@ main:focus { outline: none; }
 .clock { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--ink-2); }
 
 /* ---------- live layout ---------- */
-/* The first row is at least as tall as the map (min-height) or the rail, so a
-   short viewport scrolls the page rather than letting the map slide under the
-   sound strip. */
-.grid { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) 420px; grid-template-rows: minmax(min-content, 1fr) auto; min-height: 0; }
-.map-cell { position: relative; isolation: isolate; min-height: 460px; background: #06101a; }
-#map { position: absolute; inset: 0; }
+/* One full-bleed map; the buoy rail and the sound panels float over it as
+   glass. The grid is the positioning context so the rail can drop back into
+   the flow as a second row on phones. */
+.grid { flex: 1; position: relative; isolation: isolate; display: grid; grid-template-columns: 1fr; grid-template-rows: minmax(min-content, 1fr); min-height: 0; }
+.map-cell { position: relative; isolation: isolate; min-height: 560px; background: #06101a; }
+#map { position: absolute; inset: 0; z-index: 0; } /* own stacking context: Leaflet's pane z-indexes stay inside it */
 .map-key {
-  position: absolute; left: 16px; bottom: 16px; z-index: 10;
+  position: absolute; left: 16px; top: 16px; z-index: 10;
   display: flex; gap: 16px; padding: 8px 12px;
   background: rgba(10,20,32,.88); border: 1px solid var(--rule-strong); border-radius: var(--radius);
   font-size: var(--fs-sm); color: var(--ink-2);
@@ -110,17 +110,17 @@ main:focus { outline: none; }
 .key-range { background: transparent; border: 1.5px dashed var(--ink); }
 .key-sight { background: var(--accent); }
 
-.rail { border-left: 1px solid var(--rule); display: flex; flex-direction: column; background: var(--paper); }
-.block { padding: 20px 28px; border-bottom: 1px solid var(--rule); }
+.rail { position: absolute; top: 16px; right: 16px; z-index: 10; width: 360px; max-height: calc(100% - 240px); overflow-y: auto; display: flex; flex-direction: column; border-radius: 6px; border: 1px solid rgba(43, 68, 89, .8); background: var(--glass); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+.block { padding: 16px 20px; border-bottom: 1px solid var(--rule); }
 .rail > .block:last-child { border-bottom: 0; }
 .block-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 8px; }
 
-.buoy-id { display: flex; align-items: center; gap: 12px; font-size: var(--fs-xl); font-weight: 600; letter-spacing: -0.01em; margin: 0 0 16px; line-height: 1.2; }
+.buoy-id { display: flex; align-items: center; gap: 12px; font-size: var(--fs-xl); font-weight: 600; letter-spacing: -0.01em; margin: 0 0 12px; line-height: 1.2; }
 .state { font-size: var(--fs-xs); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 3px 8px; border-radius: 3px; border: 1px solid var(--ink-3); color: var(--ink-3); line-height: 1.4; }
 .state.on { color: var(--good); border-color: var(--good); }
 .state.stale { color: var(--warn); border-color: var(--warn); }
 .state.off { color: var(--bad); border-color: var(--bad); }
-.notice { display: flex; gap: 10px; align-items: flex-start; margin: 0 0 16px; padding: 8px 12px; border-radius: var(--radius); border: 1px solid var(--rule-strong); background: var(--paper-2); font-size: var(--fs-sm); color: var(--ink-2); line-height: 1.45; }
+.notice { display: flex; gap: 10px; align-items: flex-start; margin: 0 0 14px; padding: 8px 12px; border-radius: var(--radius); border: 1px solid var(--rule-strong); background: var(--paper-2); font-size: var(--fs-sm); color: var(--ink-2); line-height: 1.45; }
 .notice b { color: var(--warn); font-weight: 600; }
 .kv { display: grid; gap: 12px; margin: 0; }
 .kv > div { margin: 0; }
@@ -131,29 +131,28 @@ main:focus { outline: none; }
 .val { font-size: var(--fs-md); }
 
 .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0; padding: 0; margin: 0; }
-.stat { padding: 16px 0 16px 28px; margin: 0; }
-.stat + .stat { border-left: 1px solid var(--rule); padding-left: 20px; }
+.stat { padding: 14px 0 14px 20px; margin: 0; }
+.stat + .stat { border-left: 1px solid var(--rule); padding-left: 16px; }
 .stat .num { margin-top: 4px; }
 .stat dd { margin: 0; }
 .unit { font-size: var(--fs-sm); color: var(--ink-2); margin-top: 2px; }
 
-/* ---------- sound strip: waveform left, spectrogram right ---------- */
-.sound { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--rule); }
-.panel { display: flex; flex-direction: column; padding: 16px 28px 20px; min-width: 0; }
-.panel + .panel { border-left: 1px solid var(--rule); }
+/* ---------- sound overlay: two glass panels along the bottom of the map ---------- */
+.sound { position: absolute; left: 16px; right: 16px; bottom: 28px; z-index: 10; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; pointer-events: none; }
+.panel { pointer-events: auto; min-width: 0; padding: 10px 14px 12px; border-radius: 6px; border: 1px solid rgba(43, 68, 89, .8); background: var(--glass); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+.panel .block-head { margin-bottom: 6px; }
+.panel .eyebrow { color: var(--ink-2); }
+.scope-box { position: relative; isolation: isolate; height: 120px; }
+.scope { position: absolute; inset: 0; width: 100%; height: 100%; display: block; background: transparent; border-radius: 3px; }
+.scope-zero { position: absolute; left: 0; right: 0; top: 50%; border-top: 1px solid rgba(230,238,245,.18); pointer-events: none; }
+/* axes for the still spectrogram in the detail overlay */
 .spec-wrap { display: grid; grid-template-columns: 40px 1fr; gap: 8px; height: 200px; margin-top: 4px; }
 .spec-y { position: relative; font-family: var(--mono); font-size: var(--fs-xs); color: var(--ink-3); font-variant-numeric: tabular-nums; }
 .spec-y span { position: absolute; right: 0; transform: translateY(-50%); }
-.spec-box { position: relative; isolation: isolate; min-height: 0; }
-.scope { position: absolute; inset: 0; width: 100%; height: 100%; display: block; background: var(--spec-bg); border-radius: 2px; border: 1px solid var(--rule); }
+.spec-box { position: relative; isolation: isolate; min-height: 0; background: var(--paper-2); border: 1px solid var(--rule); border-radius: 3px; overflow: hidden; }
 .spec-grid { position: absolute; inset: 0; pointer-events: none; }
 .spec-grid i { position: absolute; left: 0; right: 0; border-top: 1px dashed rgba(230,238,245,.16); }
-.spec-grid i.zero { border-top-style: solid; border-top-color: rgba(230,238,245,.28); }
 .spec-x { display: flex; justify-content: space-between; font-family: var(--mono); font-size: var(--fs-xs); color: var(--ink-3); margin: 8px 0 0 48px; font-variant-numeric: tabular-nums; }
-.level { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
-.level-bar { flex: 1; height: 6px; background: var(--rule); border-radius: 3px; overflow: hidden; }
-.level-bar i { display: block; height: 100%; width: 100%; background: var(--accent); transform-origin: left center; transform: scaleX(0); transition: transform var(--t-fast) linear; }
-.level-val { font-family: var(--mono); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; color: var(--ink-2); min-width: 64px; text-align: right; }
 
 /* ---------- database ---------- */
 .db { flex: 1; padding: 28px 28px 48px; overflow-y: auto; }
@@ -214,7 +213,7 @@ main:focus { outline: none; }
 .conf { display: inline-flex; align-items: center; gap: 10px; }
 .conf-bar { width: 72px; height: 6px; background: var(--rule); border-radius: 3px; overflow: hidden; }
 .conf-bar i { display: block; height: 100%; background: var(--accent); }
-.thumb { display: block; width: 144px; height: 48px; border-radius: 2px; background: var(--spec-bg); border: 1px solid var(--rule); }
+.thumb { display: block; width: 144px; height: 48px; border-radius: 2px; background: var(--paper-2); border: 1px solid var(--rule); }
 .play { display: inline-flex; align-items: center; gap: 8px; min-height: 32px; padding: 4px 12px 4px 8px; border-radius: 999px; border: 1px solid var(--rule-strong); background: transparent; color: var(--ink); cursor: pointer; font-family: var(--mono); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; transition: color var(--t-fast) var(--ease-out), border-color var(--t-fast) var(--ease-out), background-color var(--t-fast) var(--ease-out); }
 .play:hover { border-color: var(--accent); color: var(--accent); }
 .play:active { background: var(--accent-soft); }
@@ -259,6 +258,7 @@ kbd { font-family: var(--mono); font-size: var(--fs-xs); padding: 1px 5px; borde
 .leaflet-bar a:hover { background: var(--paper-2) !important; }
 .leaflet-control-scale-line { background: rgba(10,20,32,.85) !important; border-color: var(--ink-2) !important; color: var(--ink); font-family: var(--mono); font-size: var(--fs-xs); }
 .leaflet-control-attribution { background: rgba(10,20,32,.85) !important; color: var(--ink-3) !important; font-size: var(--fs-xs); }
+.leaflet-top.leaflet-left { margin-top: 44px; } /* below the map key */
 .leaflet-control-attribution a { color: var(--ink-2) !important; }
 .buoy { position: relative; width: 16px; height: 16px; }
 .buoy::before { content: ""; position: absolute; inset: 0; border-radius: 50%; background: var(--ink); border: 3px solid var(--paper); box-shadow: 0 0 0 1px rgba(230,238,245,.5); }
@@ -275,12 +275,15 @@ kbd { font-family: var(--mono); font-size: var(--fs-xs); padding: 1px 5px; borde
 @media (prefers-reduced-motion: reduce) {
   .live.on .live-dot, .buoy::after, .sighting.hot, .db-table tr.new td, .wave { animation: none; }
   .buoy::after { opacity: .5; transform: scale(1); }
-  .level-bar i, .tab, .chip, .btn, .play, .sort, .chart .bar { transition: none; }
+  .tab, .chip, .btn, .play, .sort, .chart .bar { transition: none; }
 }
 @media (max-width: 960px) {
-  .grid { grid-template-columns: 1fr; }
-  .map-cell { min-height: 55vh; }
-  .rail { border-left: 0; border-top: 1px solid var(--rule); }
+  .map-cell { min-height: 60vh; }
+  .rail { position: static; width: auto; max-height: none; overflow: visible; border: 0; border-top: 1px solid var(--rule); border-radius: 0; background: var(--paper); -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .sound { left: 8px; right: 8px; bottom: 24px; grid-template-columns: 1fr; gap: 8px; }
+  .scope-box { height: 72px; }
+  .map-key { gap: 10px; flex-wrap: wrap; right: 16px; }
+  .leaflet-top.leaflet-left { margin-top: 80px; } /* the key wraps to two lines here */
   .top { height: auto; padding: 8px 16px; flex-wrap: wrap; }
   .top-left { gap: 16px; }
   .block { padding: 16px; }
@@ -288,11 +291,7 @@ kbd { font-family: var(--mono); font-size: var(--fs-xs); padding: 1px 5px; borde
   .db-head { margin-bottom: 20px; }
   .summary { grid-template-columns: repeat(2, 1fr); }
   .tile:nth-child(3) { border-left: 0; padding-left: 0; }
-  .sound { grid-template-columns: 1fr; }
-  .panel { padding: 16px; }
-  .panel + .panel { border-left: 0; border-top: 1px solid var(--rule); }
   .stat { padding-left: 16px; }
-  .map-key { gap: 10px; flex-wrap: wrap; right: 16px; }
   .detail { width: calc(100vw - 16px); max-height: calc(100vh - 16px); }
   .detail-head, .detail-spec, .detail-actions, .detail-nav { padding-left: 16px; padding-right: 16px; }
   .detail-facts { grid-template-columns: repeat(2, 1fr); padding-left: 16px; padding-right: 16px; }

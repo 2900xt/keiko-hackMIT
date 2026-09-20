@@ -8,7 +8,7 @@ Every whale detection the Keiko buoys report, kept in plain files in this folder
 | `detections.json` | the same rows with typed values, read by the website |
 | `buoys.csv` | buoy registry: id, name, position, hydrophone, sample rate |
 | `clips/<id>.wav` | 16-bit mono PCM audio of the call |
-| `spectrograms/<id>.png` | mel spectrogram of the clip, 0–1 kHz, magma colormap |
+| `spectrograms/<id>.png` | mel spectrogram of the clip, 0–1 kHz, RGBA: the site's blue ramp with quiet bins transparent |
 | `schema.json` | JSON Schema for a detection row |
 
 ## Columns

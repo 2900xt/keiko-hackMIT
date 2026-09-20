@@ -89,11 +89,24 @@ def write_wav(path, sr, x):
         w.setnchannels(1); w.setsampwidth(2); w.setframerate(sr); w.writeframes(pcm.tobytes())
 
 
+# The website's "sea" ramp (site/lib/dsp.ts): deep water -> blue -> sea-spray
+# white, with quiet bins transparent. value -> (r, g, b, alpha).
+SEA = [(0.00, 10, 20, 32, 0.00), (0.30, 23, 44, 62, 0.45), (0.55, 40, 104, 150, 0.85),
+       (0.78, 87, 184, 236, 1.00), (1.00, 230, 238, 245, 1.00)]
+
+
+def sea_rgba(v):
+    """Map an array of 0..1 values to uint8 RGBA through the SEA ramp."""
+    import numpy as np
+    xs = [s[0] for s in SEA]
+    chans = [np.interp(v, xs, [s[k] for s in SEA]) for k in (1, 2, 3)] + [np.interp(v, xs, [s[4] for s in SEA]) * 255]
+    return np.stack(chans, axis=-1).round().astype("uint8")
+
+
 def render_spectrogram(wav_path, png_path, fmax=1000.0, width=288, height=96):
-    """Mel-scaled log-power spectrogram, magma colormap, no axes. Same look as the website."""
+    """Mel-scaled log-power spectrogram, sea colormap, transparent floor, no axes. Same look as the website."""
     import numpy as np
     from scipy.signal import spectrogram
-    from matplotlib import colormaps
     from PIL import Image
     sr, x = read_wav(wav_path)
     nper = max(64, min(512, int(sr * 0.064)))
@@ -108,8 +121,7 @@ def render_spectrogram(wav_path, png_path, fmax=1000.0, width=288, height=96):
     img = np.stack([np.interp(cols, np.arange(rows.shape[1]), rows[i]) for i in range(height)])
     lo, hi = np.percentile(img, 5), np.percentile(img, 99.5)
     img = np.clip((img - lo) / max(hi - lo, 1e-6), 0, 1)
-    rgb = (colormaps["magma"](img)[:, :, :3] * 255).astype("uint8")
-    Image.fromarray(rgb[::-1]).save(png_path)  # low frequency at the bottom
+    Image.fromarray(sea_rgba(img)[::-1], "RGBA").save(png_path)  # low frequency at the bottom
 
 
 def peak_hz(wav_path, fmax=1000.0):

@@ -22,17 +22,6 @@ export function useNow(ms = 1000) {
   return now;
 }
 
-// Smoothed hydrophone level in dB, updated on every audio frame (20 / s).
-export function useAudioLevel(feed: Feed) {
-  const [level, setLevel] = useState<number | null>(null);
-  const smooth = useRef(-60);
-  useFeedEvent(feed, "audio", (a) => {
-    smooth.current += (a.level_db - smooth.current) * 0.2;
-    setLevel(smooth.current);
-  });
-  return level;
-}
-
 // Rendered size of an element, via ResizeObserver.
 export function useElementSize<T extends HTMLElement>() {
   const ref = useRef<T>(null);

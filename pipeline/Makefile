@@ -11,7 +11,7 @@
 
 PY   ?= ../.venv/bin/python
 ARGS ?=
-VIA  ?= wifi
+VIA  ?= usb
 
 .PHONY: venv test demo live
 

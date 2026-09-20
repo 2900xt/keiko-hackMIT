@@ -14,12 +14,12 @@ npm run build    # static export to out/, data/ included
 - `components/`
   - `Landing.tsx` — landing page: one hero, a statline, links to the app and the repo
   - `KeikoApp.tsx` — owns the feed, the detection list, the `#live` / `#db` hash route, and table state
-  - `LiveView.tsx` — map cell + buoy rail on top, sound strip below; `MapView.tsx` (Leaflet, client-only), `Waveform.tsx` (raw-signal oscilloscope + level bar, bottom left), `Spectrogram.tsx` (scrolling mel canvas, bottom right)
-  - `DatabaseView.tsx` — summary tiles, `DetectionsChart.tsx` (14-day SVG bars), filter chips, sortable table of `DetectionRow.tsx` (time, location, confidence, spectrogram thumbnail, audio clip)
+  - `LiveView.tsx` — map cell + buoy rail; `MapView.tsx` (Leaflet, client-only), and two translucent panels floating over the bottom of the map: `Waveform.tsx` (raw-signal oscilloscope) and `Spectrogram.tsx` (scrolling mel canvas, quiet bins transparent)
+  - `DatabaseView.tsx` — summary tiles, `DetectionsChart.tsx` (14-day SVG bars), filter chips, sortable table of `DetectionRow.tsx` (time, location, confidence, spectrogram thumbnail, audio clip); clicking a row opens `DetectionDetail.tsx`, a dialog with the full spectrogram, clip, every field, and a jump to the map
 - `lib/`
   - `feed.ts` — synthetic feed: `telemetry` every 2 s, `audio` (spectrogram column) 20×/s, `detection` when a call ends; `feed.synthetic` is true, and the buoy rail says so (set it false in a real client)
   - `detections.ts` — detection types, archive + buoy loaders, time helpers
-  - `dsp.ts` — magma colormap, mel scale, and the thumbnail / WAV a live row renders from its call parameters
+  - `dsp.ts` — the "sea" colour ramp (shared with `tools/keiko_data.py`), mel scale, and the thumbnail / WAV a live row renders from its call parameters
   - `hooks.ts` — `useFeedEvent`, `useNow`, `useAudioLevel`, `useElementSize`, `usePlayer`
 - `public/data` — copy of `data/` made by `npm run dev` and `npm run build` (gitignored), so the dev server and the static export both serve the database
 - `data/` — the detection database: CSV + JSON, one WAV clip and one PNG spectrogram per detection

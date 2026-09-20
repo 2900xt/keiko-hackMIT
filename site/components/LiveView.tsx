@@ -27,6 +27,23 @@ export default function LiveView({ feed, active, now, buoyId, position, telemetr
           <span><i className="key-range" aria-hidden="true" />Hydrophone range, {RANGE_M} m</span>
           <span><i className="key-sight" aria-hidden="true" />Detection, fades with age</span>
         </div>
+
+        <section className="sound" aria-label="Hydrophone audio">
+          <div className="panel">
+            <div className="block-head">
+              <div className="eyebrow">Waveform</div>
+              <div className="eyebrow eyebrow-quiet">2 kHz · last 128 ms</div>
+            </div>
+            <Waveform feed={feed} />
+          </div>
+          <div className="panel">
+            <div className="block-head">
+              <div className="eyebrow">Spectrogram</div>
+              <div className="eyebrow eyebrow-quiet">0–1 kHz · last 30 s</div>
+            </div>
+            <Spectrogram feed={feed} />
+          </div>
+        </section>
       </section>
 
       <aside className="rail">
@@ -69,23 +86,6 @@ export default function LiveView({ feed, active, now, buoyId, position, telemetr
 
         <Stats now={now} detections={detections} />
       </aside>
-
-      <section className="sound" aria-label="Hydrophone audio">
-        <div className="panel">
-          <div className="block-head">
-            <div className="eyebrow">Waveform</div>
-            <div className="eyebrow eyebrow-quiet">Raw signal · 2 kHz · last 128 ms</div>
-          </div>
-          <Waveform feed={feed} />
-        </div>
-        <div className="panel">
-          <div className="block-head">
-            <div className="eyebrow">Spectrogram</div>
-            <div className="eyebrow eyebrow-quiet">Mel scale · 0–1 kHz · last 30 s</div>
-          </div>
-          <Spectrogram feed={feed} />
-        </div>
-      </section>
     </main>
   );
 }
