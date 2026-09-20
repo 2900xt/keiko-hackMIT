@@ -519,6 +519,215 @@ class Builder:
                 n += 1
         self.con.commit(); print(f"RightWhaleCalls: {n} clips")
 
+
+    # ------------------------------------------------------------------ BEANS "hiceas" minke boing detection set (HICEAS 2017 towed array, NOAA PIFSC)
+    def load_hiceas(self):
+        base = RAW / "beans_hiceas"
+        if not (base / "wav").exists(): return
+        did = self.dataset("BEANS benchmark (earthspecies)", downloaded=1, local_path="audio/hiceas_minke",
+                           url="https://github.com/earthspecies/beans (https://storage.googleapis.com/ml-bioacoustics-datasets/hiceas_1-20_minke-detection.zip)")
+        sid = self.species("Balaenoptera acutorostrata", common="Minke whale", group="baleen whale")
+        out = AUDIO / "hiceas_minke"; n = 0
+        for split in ("train", "valid", "test"):
+            f = base / f"{split}.jsonl"
+            if not f.exists(): continue
+            for line in open(f):
+                r = json.loads(line); src = base / "wav" / os.path.basename(r["path"])
+                if not src.exists(): continue
+                anns = r.get("annotations") or []
+                if anns:
+                    info = sf.info(str(src)); sr = info.samplerate
+                    for k, a in enumerate(anns):
+                        st, ed = float(a["st"]), float(a["ed"])
+                        dst = out / "boing" / f"{src.stem}_{st:06.2f}.wav"; dst.parent.mkdir(parents=True, exist_ok=True)
+                        if not dst.exists():
+                            x, _ = sf.read(str(src), start=int(st * sr), frames=int((ed - st) * sr), dtype="int16")
+                            if len(x) == 0: continue
+                            sf.write(str(dst), x, sr, subtype="PCM_16")
+                        sr2, dur, ch = wav_info(dst)
+                        self.clip(dataset_id=did, species_id=sid, taxon_label="Minke whale", sound_type="boing", file_path=str(dst.relative_to(ROOT)),
+                                  sample_rate=sr2, duration_s=dur, channels=ch, source_record_id=f"{split}:{src.name}@{st}", observation_date=src.stem.split("_")[1] if "_" in src.stem else None,
+                                  location="Hawaiian EEZ (HICEAS 2017 towed array)", note=f"BEANS hiceas {split}; label={a.get('label')}",
+                                  license="NOAA public domain (via BEANS)", source_url="https://github.com/earthspecies/beans"); n += 1
+                else:
+                    dst = out / "noise" / src.name; dst.parent.mkdir(parents=True, exist_ok=True)
+                    if not dst.exists(): os.link(src, dst)
+                    sr2, dur, ch = wav_info(dst)
+                    self.clip(dataset_id=did, species_id=None, taxon_label="noise (no minke boing; towed-array ambient)", sound_type="noise", file_path=str(dst.relative_to(ROOT)),
+                              sample_rate=sr2, duration_s=dur, channels=ch, source_record_id=f"{split}:{src.name}", observation_date=src.stem.split("_")[1] if "_" in src.stem else None,
+                              location="Hawaiian EEZ (HICEAS 2017 towed array)", note=f"BEANS hiceas {split}; no annotations",
+                              license="NOAA public domain (via BEANS)", source_url="https://github.com/earthspecies/beans"); n += 1
+        self.con.commit(); print(f"HICEAS minke: {n} clips")
+
+
+    # ------------------------------------------------------------------ DCLDE 2027 killer whale ecotype dataset (NOAA NCEI GCS bucket), size-capped subset
+    # Annotations.csv gives per-file bounding boxes (FileBeginSec/FileEndSec, Low/HighFreqHz) with ClassSpecies (KW/HW/AB/UndBio) and Ecotype.
+    # raw/dclde2027_kw/selected_files.csv lists which sound files were downloaded (see catalog/survey_registries_endpoints.md for the full 1.6 TB set).
+    DCLDE_ECO = {"SRKW": "Southern Resident killer whale (SRKW)", "NRKW": "Northern Resident killer whale (NRKW)", "TKW": "Bigg's / transient killer whale (TKW)",
+                 "OKW": "Offshore killer whale (OKW)", "SAR": "Southern Alaska Resident killer whale (SAR)"}
+    def load_dclde_kw(self):
+        base = RAW / "dclde2027_kw"
+        ann_path = base / "Annotations.csv"
+        if not ann_path.exists(): return
+        did = self.dataset("DCLDE 2027 (ex-2026) killer whale dataset", downloaded=1, local_path="audio/dclde2027_kw",
+                           url="https://doi.org/10.25921/15ey-mh50 (gs://noaa-passive-bioacoustic/dclde/2027/dclde_2027_killer_whales/)")
+        sid_kw = self.species("Orcinus orca", common="Killer whale", group="toothed whale")
+        sid_hw = self.species("Megaptera novaeangliae", common="Humpback whale", group="baleen whale")
+        wavidx = {p.name: p for p in base.rglob("*") if p.suffix.lower() in (".flac", ".wav") and not (p.with_name(p.name + ".aria2")).exists()}
+        out = AUDIO / "dclde2027_kw"; n = 0; skipped = 0
+        by_file = collections.defaultdict(list)
+        with open(ann_path, newline="") as f:
+            for r in csv.DictReader(f):
+                if r["Soundfile"] in wavidx: by_file[r["Soundfile"]].append(r)
+        PAD = 0.1
+        for fname, rows in by_file.items():
+            src = wavidx[fname]
+            try: info = sf.info(str(src)); sr = info.samplerate; nfr = info.frames
+            except Exception as e: print("dclde unreadable", fname, e); continue
+            for r in rows:
+                cls, eco = r["ClassSpecies"], (r.get("Ecotype") or "NA")
+                if cls == "KW":
+                    sid, taxon = sid_kw, self.DCLDE_ECO.get(eco, "Killer whale (ecotype unknown)")
+                    folder = "KW_" + (eco if eco in self.DCLDE_ECO else "unknown")
+                elif cls == "HW": sid, taxon, folder = sid_hw, "Humpback whale", "HW"
+                elif cls == "AB": sid, taxon, folder = None, "abiotic (non-biological)", "abiotic"
+                else: sid, taxon, folder = None, "undetermined biological", "undetermined_bio"
+                try: b, e = float(r["FileBeginSec"]), float(r["FileEndSec"])
+                except ValueError: continue
+                b0, e0 = max(0.0, b - PAD), e + PAD
+                start, frames = int(b0 * sr), int((e0 - b0) * sr)
+                if frames <= 0 or start >= nfr: skipped += 1; continue
+                dst = out / folder / f"{pathlib.Path(fname).stem}_{b:09.3f}.wav"; dst.parent.mkdir(parents=True, exist_ok=True)
+                if not dst.exists():
+                    try:
+                        x, _ = sf.read(str(src), start=start, frames=min(frames, nfr - start), dtype="int16")
+                        if x.ndim > 1: x = x[:, 0]           # multichannel arrays: keep channel 1
+                        if len(x) == 0: skipped += 1; continue
+                        sf.write(str(dst), x, sr, subtype="PCM_16")
+                    except Exception as ex: print("dclde cut failed", fname, ex); skipped += 1; continue
+                sr2, dur, ch = wav_info(dst)
+                stype = {"KW": "killer whale call/click/whistle (box)", "HW": "humpback call (box)", "AB": "abiotic", "UndBio": "undetermined biological"}.get(cls, cls)
+                self.clip(dataset_id=did, species_id=sid, taxon_label=taxon, sound_type=stype, file_path=str(dst.relative_to(ROOT)),
+                          sample_rate=sr2, duration_s=dur, channels=ch, source_record_id=f"{fname}@{b}-{e}", observation_date=(r.get("UTC") or "")[:10] or None,
+                          location=f"{r.get('Provider')} / {r.get('Dataset')} (NE Pacific)",
+                          note=f"DCLDE2027 {r.get('AnnotationLevel')} box {r.get('LowFreqHz')}-{r.get('HighFreqHz')} Hz; KW_certain={r.get('KW_certain')}; pad={PAD}s",
+                          license="CC BY 4.0 per bucket license file (Sci Data paper states CC BY-NC-ND 4.0)", source_url="https://doi.org/10.25921/15ey-mh50")
+                n += 1
+            if n % 5000 == 0: self.con.commit()
+        self.con.commit(); print(f"DCLDE 2027 KW: {n} clips from {len(by_file)} files (skipped {skipped})")
+
+
+    # ------------------------------------------------------------------ AAD AcousticTrends_BlueFinLibrary (IWC-SORP Antarctic blue & fin whale annotated library)
+    # Site folders each hold wav/ (250-2000 Hz, ~1 h files) plus Raven selection tables, one per call type; the call type is encoded in the table filename.
+    AAD_TYPES = [  # (regex on table filename, scientific name, common name, sound_type)
+        (r"ant[-_. ]?a", "Balaenoptera musculus intermedia", "Antarctic blue whale", "Bm-Ant-A (Z-call unit A)"),
+        (r"ant[-_. ]?b", "Balaenoptera musculus intermedia", "Antarctic blue whale", "Bm-Ant-B (Z-call unit B)"),
+        (r"ant[-_. ]?z", "Balaenoptera musculus intermedia", "Antarctic blue whale", "Bm-Ant-Z (Z-call)"),
+        (r"bm[-_. ]?d\b|bm[-_. ]?dcalls|bm\.d\.|_d\.txt|bmd\.", "Balaenoptera musculus intermedia", "Antarctic blue whale", "Bm-D (D-call)"),
+        (r"20 ?plus", "Balaenoptera physalus", "Fin whale", "Bp-20Plus (20 Hz pulse with high-frequency component)"),
+        (r"20 ?hz|bp20(?!plus)", "Balaenoptera physalus", "Fin whale", "Bp-20Hz (20 Hz pulse)"),
+        (r"downsweep|dwnswp|dswp|fin\.ds|bp\.ds|bp-ds|bp_ds", "Balaenoptera physalus", "Fin whale", "Bp-Downsweep (40 Hz downsweep)"),
+        (r"highercall", "Balaenoptera physalus", "Fin whale", "Bp higher-frequency call"),
+        (r"minke|bioduck", "Balaenoptera bonaerensis", "Antarctic minke whale", "bio-duck / downsweep"),
+        (r"hump", "Megaptera novaeangliae", "Humpback whale", "call"),
+        (r"unid|unknown|swi|tonal30|backbeat|recurrent", None, None, "unidentified call"),
+    ]
+    def load_aad_bluefin(self):
+        base = RAW / "aad_bluefin"
+        if not base.exists(): return
+        did = self.dataset("AcousticTrends_BlueFinLibrary (IWC-SORP/SOOS Acoustic Trends annotated library)", downloaded=1, local_path="audio/aad_bluefin",
+                           url="https://data.aad.gov.au/metadata/AcousticTrends_BlueFinLibrary (DOI 10.26179/5e6056035c01b)")
+        out = AUDIO / "aad_bluefin"; n = 0; skipped = 0; PAD = 0.25
+        sid_cache = {}
+        for table in sorted(base.rglob("*.txt")):
+            if "/wav/" in str(table) or table.name.lower() in ("readme.txt", "license.txt", "readme"): continue
+            site = table.relative_to(base).parts[0]
+            wavdir = base / site / "wav"
+            if not wavdir.exists(): continue
+            name = table.name.lower()
+            match = next(((sci, common, st) for rx, sci, common, st in self.AAD_TYPES if re.search(rx, name)), None)
+            if not match: continue
+            sci, common, stype = match
+            sid = None
+            if sci:
+                sid = sid_cache.get(sci) or self.species(sci, common=common, group="baleen whale"); sid_cache[sci] = sid
+            try: lines = table.read_text(errors="replace").splitlines()
+            except Exception: continue
+            if not lines or "\t" not in lines[0]: continue
+            hdr = lines[0].split("\t"); H = {h.strip().lower(): i for i, h in enumerate(hdr)}
+            col = lambda *names: next((H[k] for k in names if k in H), None)
+            c_file, c_bs, c_es = col("begin file"), col("beg file samp (samples)", "begin file samp (samples)"), col("end file samp (samples)")
+            c_bt, c_et, c_off = col("begin time (s)"), col("end time (s)"), col("file offset (s)")
+            c_lo, c_hi = col("low freq (hz)"), col("high freq (hz)")
+            if c_file is None or (c_bs is None and c_off is None): skipped += 1; continue
+            info_cache = {}
+            for ln in lines[1:]:
+                f = ln.split("\t")
+                if len(f) <= max(c_file, c_bs or 0, c_es or 0): continue
+                wav = wavdir / f[c_file].strip()
+                if not wav.exists(): skipped += 1; continue
+                try:
+                    if wav not in info_cache: info_cache[wav] = sf.info(str(wav))
+                    info = info_cache[wav]; sr = info.samplerate
+                    if c_bs is not None and f[c_bs].strip():
+                        b_s, e_s = int(float(f[c_bs])), int(float(f[c_es]))
+                    else:
+                        off = float(f[c_off]); dur = float(f[c_et]) - float(f[c_bt]); b_s, e_s = int(off * sr), int((off + dur) * sr)
+                    b_s = max(0, b_s - int(PAD * sr)); e_s = min(info.frames, e_s + int(PAD * sr))
+                    if e_s <= b_s: skipped += 1; continue
+                    dst = out / slug(site) / slug(stype.split(" (")[0]) / f"{wav.stem}_{b_s:09d}.wav"; dst.parent.mkdir(parents=True, exist_ok=True)
+                    if not dst.exists():
+                        x, _ = sf.read(str(wav), start=b_s, frames=e_s - b_s, dtype="int16")
+                        if x.ndim > 1: x = x[:, 0]
+                        sf.write(str(dst), x, sr, subtype="PCM_16")
+                    sr2, dur2, ch = wav_info(dst)
+                    lo = f[c_lo] if c_lo is not None and len(f) > c_lo else ""; hi = f[c_hi] if c_hi is not None and len(f) > c_hi else ""
+                    self.clip(dataset_id=did, species_id=sid, taxon_label=common or "unidentified (Antarctic low-frequency)", sound_type=stype,
+                              file_path=str(dst.relative_to(ROOT)), sample_rate=sr2, duration_s=dur2, channels=ch,
+                              source_record_id=f"{site}/{table.name}#{f[0]}", observation_date=wav.stem[:8] if wav.stem[:8].isdigit() else None,
+                              location=f"{site} (Southern Ocean)", note=f"Raven selection {lo}-{hi} Hz; pad={PAD}s",
+                              license="CC BY 4.0", source_url="https://data.aad.gov.au/metadata/AcousticTrends_BlueFinLibrary")
+                    n += 1
+                except Exception as ex:
+                    skipped += 1
+            self.con.commit()
+        print(f"AAD BlueFin: {n} clips (skipped {skipped})")
+
+
+    # ------------------------------------------------------------------ Cornell/Marinexplore Whale Detection Challenge, FULL 30,000-clip training set
+    # via HF monster-monash/CornellWhaleChallenge (X: 30000x1x4000 int16-valued float32 @ 2 kHz; y: 1 = NARW upcall). Supersedes the 12,896 mirror subset.
+    def load_cornell_full(self):
+        base = RAW / "cornell_whale_full"
+        xp, yp = base / "CornellWhaleChallenge_X.npy", base / "CornellWhaleChallenge_y.npy"
+        if not (xp.exists() and yp.exists()): return
+        import numpy as np
+        X = np.load(xp, mmap_mode="r"); y = np.load(yp)
+        folds = {}
+        for k in range(5):
+            fp = base / f"test_indices_fold_{k}.txt"
+            if fp.exists():
+                for i in fp.read_text().split(): folds[int(i)] = k
+        did = self.dataset("Marinexplore/Cornell Whale Detection Challenge (Kaggle 2013)", downloaded=1, local_path="audio/cornell_whale",
+                           url="https://www.kaggle.com/competitions/whale-detection-challenge/data (full train set via https://huggingface.co/datasets/monster-monash/CornellWhaleChallenge)")
+        sid = self.species("Eubalaena glacialis", common="North Atlantic right whale", group="baleen whale")
+        out = AUDIO / "cornell_whale"; (out / "upcall").mkdir(parents=True, exist_ok=True); (out / "noise").mkdir(parents=True, exist_ok=True)
+        n = 0
+        for i in range(X.shape[0]):
+            is_call = int(y[i]) == 1
+            dst = out / ("upcall" if is_call else "noise") / f"cwc_{i:05d}.wav"
+            if not dst.exists():
+                a = np.asarray(X[i]).reshape(-1)
+                sf.write(str(dst), np.clip(a, -32768, 32767).astype(np.int16), 2000, subtype="PCM_16")
+            self.clip(dataset_id=did, species_id=sid if is_call else None,
+                      taxon_label="North Atlantic right whale" if is_call else "noise (no right whale; ambient/ship/anthropogenic)",
+                      sound_type="upcall" if is_call else "noise", file_path=str(dst.relative_to(ROOT)), sample_rate=2000, duration_s=2.0, channels=1,
+                      source_record_id=f"train:{i}", location="Massachusetts Bay / Cape Cod (Cornell MARU buoys)",
+                      note=f"Kaggle whale-detection-challenge train clip {i}; MONSTER cv fold={folds.get(i)}; label={int(y[i])}",
+                      license="Copyright 2011 Cornell University (Kaggle competition rules, research use)", source_url="https://www.kaggle.com/competitions/whale-detection-challenge")
+            n += 1
+            if n % 5000 == 0: self.con.commit(); print(f"  cornell {n}")
+        self.con.commit(); print(f"Cornell full: {n} clips")
+
     # ------------------------------------------------------------------ exports
     def export(self):
         for name, q in [("species", "SELECT * FROM v_species_summary"), ("clips", "SELECT * FROM v_clips"),
@@ -537,7 +746,11 @@ if __name__ == "__main__":
     b.load_zenodo()
     b.load_toadfish()
     b.load_orcasound()
-    b.load_right_whale()
+    b.load_cornell_full()   # full 30k set; load_right_whale() (12,896 mirror subset) is superseded
+    b.load_hiceas()
+    skip = set(os.environ.get("SKIP_LOADERS", "").split(","))   # e.g. SKIP_LOADERS=dclde_kw,aad_bluefin while those downloads are incomplete
+    if "dclde_kw" not in skip: b.load_dclde_kw()
+    if "aad_bluefin" not in skip: b.load_aad_bluefin()
     b.export()
     for row in b.con.execute("SELECT s.taxon_group, COUNT(DISTINCT c.species_id), COUNT(*) FROM clips c LEFT JOIN species s USING(species_id) GROUP BY s.taxon_group"):
         print(row)

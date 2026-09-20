@@ -49,10 +49,28 @@ for info in z.infolist():
 os.remove("sounds.zip")
 PY
 
-# 6. Cornell/Marinexplore right whale upcall challenge (Kaggle 2013) via the timeseriesclassification.com mirror (260 MB, no login)
-mkdir -p raw/right_whale_calls
-aria2c -d raw/right_whale_calls -o RightWhaleCalls.zip -x 8 -s 8 -c --file-allocation=none "https://www.timeseriesclassification.com/aeon-toolkit/RightWhaleCalls.zip"
-(cd raw/right_whale_calls && unzip -qo RightWhaleCalls.zip)
+# 6. Cornell/Marinexplore right whale upcall challenge (Kaggle 2013), full 30,000-clip train set via HF monster-monash mirror (480 MB, no login)
+python3 - <<'PY'
+from huggingface_hub import hf_hub_download
+for f in ["CornellWhaleChallenge_X.npy", "CornellWhaleChallenge_y.npy"] + [f"test_indices_fold_{i}.txt" for i in range(5)]:
+    hf_hub_download("monster-monash/CornellWhaleChallenge", f, repo_type="dataset", local_dir="raw/cornell_whale_full")
+PY
 
-# 7. Build
+# 7. BEANS "hiceas" minke boing detection set (1.4 GB, NOAA public domain)
+mkdir -p raw/beans_hiceas
+aria2c -d raw/beans_hiceas -o hiceas_1-20_minke-detection.zip -x 16 -s 16 -c --file-allocation=none "https://storage.googleapis.com/ml-bioacoustics-datasets/hiceas_1-20_minke-detection.zip"
+(cd raw/beans_hiceas && unzip -qo hiceas_1-20_minke-detection.zip)
+
+# 8. DCLDE 2027 killer whale ecotype set: annotation table + the size-capped audio subset listed in raw/dclde2027_kw/aria_urls.txt (23 GB of the 1.6 TB set)
+mkdir -p raw/dclde2027_kw
+curl -s -o raw/dclde2027_kw/Annotations.csv "https://storage.googleapis.com/noaa-passive-bioacoustic/dclde/2027/dclde_2027_killer_whales/Annotations.csv"
+cp scripts/dclde2027_selected_urls.txt raw/dclde2027_kw/aria_urls.txt
+aria2c -i raw/dclde2027_kw/aria_urls.txt -d raw/dclde2027_kw -x 8 -s 8 -j 6 -c --file-allocation=none
+
+# 9. Antarctic blue/fin whale annotated library (AAD, 13 GB, CC BY 4.0). Needs temporary S3 credentials: request them at
+#    https://data.aad.gov.au/eds/5091/download (enter an email; AADC emails an access key / secret key), then:
+#    echo '{"endpoint":"https://transfer.data.aad.gov.au","access":"<KEY>","secret":"<SECRET>","bucket":"aadc-datasets","prefix":"AcousticTrends_BlueFinLibrary/"}' > aad_creds.json
+#    AAD_CREDS=aad_creds.json python3 scripts/download_aad_bluefin.py
+
+# 10. Build
 python3 scripts/build_db.py
