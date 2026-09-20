@@ -1,0 +1,39 @@
+{
+ "source": "Cornell/Marinexplore Whale Detection Challenge (Kaggle 2013), data/train",
+ "n": 30000,
+ "X": {
+  "file": "X.npy",
+  "dtype": "uint8",
+  "shape": [
+   30000,
+   129,
+   251
+  ],
+  "axes": [
+   "clip",
+   "freq_bin",
+   "frame"
+  ],
+  "scale": "per-clip min-max of log10 power -> 0..255",
+  "channels": 1
+ },
+ "y": {
+  "file": "y.npy",
+  "dtype": "int8",
+  "1": "right whale upcall",
+  "0": "noise"
+ },
+ "stft": {
+  "sr": 2000,
+  "n_fft": 256,
+  "hop": 16,
+  "window": "hann",
+  "freq_res_hz": 7.8125,
+  "frame_ms": 8.0,
+  "fmax_hz": 1000.0
+ },
+ "class_counts": {
+  "0": 22973,
+  "1": 7027
+ }
+}
