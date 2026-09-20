@@ -1,95 +1,52 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Keiko Whale Network</title>
-  <meta name="description" content="Live map of whale detections reported by Keiko acoustic buoys. Rough draft with one buoy streaming synthetic data." />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Keiko Buoy</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" />
-  <link rel="stylesheet" href="css/style.css" />
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand">
-      <span class="brand-mark" aria-hidden="true"></span>
-      <div>
-        <h1>Keiko Whale Network</h1>
-        <p class="subtitle">Acoustic buoys · live whale detections · <span class="draft-tag">rough draft</span></p>
-      </div>
-    </div>
-    <div class="topbar-right">
-      <span class="pill pill-live" id="stream-pill"><span class="dot"></span> Synthetic stream</span>
-      <span class="pill" id="clock">--:--:--</span>
-      <button class="btn" id="pause-btn" type="button" aria-pressed="false">Pause</button>
-    </div>
+  <header>
+    <h1>Keiko</h1>
+    <p class="sub">One buoy, Charles River, off MIT. Synthetic data.</p>
   </header>
 
-  <main class="layout">
-    <section class="map-wrap" aria-label="Detection map">
+  <main>
+    <section class="panel map-panel">
+      <h2>Live map</h2>
       <div id="map"></div>
-      <div class="map-legend" aria-label="Legend">
-        <div class="legend-row"><span class="swatch swatch-buoy"></span> Buoy</div>
-        <div class="legend-row"><span class="swatch swatch-range"></span> Detection range</div>
-        <div class="legend-row"><span class="swatch swatch-whale"></span> Whale detection (fades over 30 min)</div>
-      </div>
     </section>
 
-    <aside class="sidebar">
-      <section class="card" id="buoy-card">
-        <div class="card-head">
-          <h2>Buoy <span id="buoy-id">—</span></h2>
-          <span class="status" id="buoy-status">connecting</span>
-        </div>
-        <p class="muted" id="buoy-name">—</p>
-        <dl class="kv">
-          <div><dt>Position</dt><dd id="buoy-pos">—</dd></div>
-          <div><dt>Battery</dt><dd id="buoy-batt">—</dd></div>
-          <div><dt>Water temp</dt><dd id="buoy-temp">—</dd></div>
-          <div><dt>Signal</dt><dd id="buoy-rssi">—</dd></div>
-          <div><dt>Noise floor</dt><dd id="buoy-noise">—</dd></div>
-          <div><dt>Uptime</dt><dd id="buoy-uptime">—</dd></div>
-          <div><dt>Last heartbeat</dt><dd id="buoy-heartbeat">—</dd></div>
-        </dl>
-      </section>
+    <section class="panel">
+      <h2>Buoy status</h2>
+      <table class="status">
+        <tr><th>ID</th><td id="s-id">—</td></tr>
+        <tr><th>State</th><td id="s-state">—</td></tr>
+        <tr><th>Latitude</th><td id="s-lat">—</td></tr>
+        <tr><th>Longitude</th><td id="s-lon">—</td></tr>
+        <tr><th>Battery</th><td><span id="s-batt">—</span><span class="batt"><i id="s-batt-bar"></i></span></td></tr>
+        <tr><th>Water temp</th><td id="s-temp">—</td></tr>
+        <tr><th>Uptime</th><td id="s-uptime">—</td></tr>
+        <tr><th>Last update</th><td id="s-time">—</td></tr>
+      </table>
+    </section>
 
-      <section class="card">
-        <div class="card-head">
-          <h2>Hydrophone</h2>
-          <span class="muted mono" id="spec-label">0–1 kHz · 10 fps</span>
-        </div>
-        <canvas id="spectrogram" width="600" height="160" aria-label="Live spectrogram of the hydrophone signal"></canvas>
-        <div class="spec-axis"><span>1 kHz</span><span>500 Hz</span><span>0 Hz</span></div>
-      </section>
-
-      <section class="card">
-        <div class="card-head">
-          <h2>Last hour</h2>
-          <span class="muted" id="hour-total">0 detections</span>
-        </div>
-        <ul class="species-bars" id="species-bars"></ul>
-      </section>
-
-      <section class="card card-grow">
-        <div class="card-head">
-          <h2>Detections</h2>
-          <span class="muted">newest first</span>
-        </div>
-        <ol class="feed" id="feed" aria-live="polite"></ol>
-      </section>
-    </aside>
+    <section class="panel">
+      <h2>Live hydrophone</h2>
+      <p class="label">Waveform</p>
+      <canvas id="wave" width="800" height="120"></canvas>
+      <p class="label">Spectrogram, 0–1 kHz, last 30 s</p>
+      <canvas id="spec" width="600" height="160"></canvas>
+      <p class="label" id="spec-note">Level: — dB</p>
+    </section>
   </main>
-
-  <footer class="foot">
-    <span>Data on this page is <strong>synthetic</strong>. Nothing here is a real whale. Replace <code>js/synthetic-stream.js</code> with a live feed to go real.</span>
-    <a href="https://github.com/2900xt/keiko-hackMIT" rel="noopener">github.com/2900xt/keiko-hackMIT</a>
-  </footer>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
           integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-  <script src="js/synthetic-stream.js"></script>
-  <script src="js/app.js"></script>
+  <script src="synthetic.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
