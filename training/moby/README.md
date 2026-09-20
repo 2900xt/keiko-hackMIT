@@ -35,6 +35,35 @@ each fold model trains on 4 folds with AdamW + one-cycle LR, class-weighted cros
 label smoothing, and early-stops on its own fold's AUROC. Augmentation on the GPU batch, train only: Gaussian blur on the
 2D stack (p = 0.5), time dilation 0.85-1.15x applied to both branches together, additive gain jitter, one time mask.
 
+## Adding Watkins (`watkins_features.py`)
+
+The Watkins Marine Mammal Sound Database cuts in `~/Projects/marine-sounds-db` go through the *same* `clip_features()`
+so they can be trained on with the Kaggle rows unchanged:
+
+```bash
+python3 watkins_features.py --merge      # ~15 s: moby_watkins.npz (+ .csv manifest) and moby_narw_watkins.npz = Kaggle + Watkins
+python3 train.py --features ../dataset/features/moby_narw_watkins.npz
+```
+
+What it does differently from the Kaggle path, and why (details in the script docstring):
+
+| step | rule | reason |
+|---|---|---|
+| species | right (N. Atlantic + southern), bowhead, humpback, gray only | Moby's Nyquist is 1 kHz; these keep ≥ 87 % of their energy below it, dolphins and killer whales keep ≤ 10 % and would be hiss labelled "whale" |
+| sample rate | drop cuts digitised below 2 kHz | every Watkins fin whale is 320–640 Hz; upsampled, the empty band above their Nyquist is a recorder shortcut |
+| length | drop < 0.8 s; centre-pad shorter-than-2 s cuts by **reflection**; longer cuts give ≤ 5 windows ≥ 1 s apart | zero padding puts a silent block in log-RMS / flatness / ZCR that no Kaggle clip has |
+| level | each window's peak is drawn from the Kaggle peak distribution (deterministic per window) | Kaggle clips are not normalised (peak 0.01–1.0); a fixed Watkins level would be a domain cue |
+| split | 15 % of *tapes* held out (`split` array; Watkins ID prefix = tape) | cuts from one tape are near-duplicates |
+| wild only | location matching aquarium / tank / pool / lab dropped | captive recordings |
+
+Yield: 1,482 cuts → 3,073 windows (humpback 1,518, bowhead 957, N. Atlantic right 475, southern right 66, gray 57)
+over 47 tapes, 379 windows on held-out tapes. All rows are `y = 1`: Watkins has no noise cuts.
+
+`moby_narw_watkins.npz` has `X2`, `X1`, `y` (what `train.py` reads) plus `source`, `group`, `species`, `split`.
+`train.py` currently splits by clip, so two things to check on a merged model: (1) evaluate on the Kaggle-only rows of the
+test split, because the only negatives are Kaggle noise and the model can learn "analog tape vs MARU buoy" instead of
+"whale vs noise"; (2) hold out whole tapes (`group`) rather than windows when reporting Watkins numbers.
+
 ## Results
 
 RESULTS_PLACEHOLDER
