@@ -3,8 +3,8 @@
 One unified, ML-ready database of ocean animal sounds matched to the animal that made them, plus a
 literature-derived catalog of every public marine bioacoustics dataset found in a sweep of 2015–2026 papers.
 
-Built 2026-09-19. **The 16 GB of audio is not in git.** Run `./fetch_data.sh` (needs `aria2c`, `unzip`, `python3` with
-`huggingface_hub pyarrow soundfile`) to download the raw sources (~20 GB) and rebuild `audio/` exactly as indexed in
+Built 2026-09-19. **The audio is not in git.** Run `./fetch_data.sh` (needs `aria2c`, `unzip`, `python3` with
+`huggingface_hub pyarrow soundfile numpy`) to download the raw sources and rebuild `audio/` exactly as indexed in
 `marine_sounds.sqlite` / `catalog/clips.csv` (paths are relative to this folder). Everything else lives here.
 
 ## What's here
@@ -12,7 +12,7 @@ Built 2026-09-19. **The 16 GB of audio is not in git.** Run `./fetch_data.sh` (n
 | Path | What it is |
 |---|---|
 | `marine_sounds.sqlite` | The database. Tables: `species`, `sound_types`, `datasets`, `clips`; views `v_clips`, `v_species_summary`. |
-| `audio/<dataset>/<taxon or label>/*.wav` | 108,246 extracted clips (16 GB). Every file has a row in `clips`. |
+| `audio/<dataset>/<taxon or label>/*.wav` | 126,563 extracted clips (16 GB). Every file has a row in `clips`. |
 | `catalog/clips.csv`, `species.csv`, `sound_types.csv`, `datasets.csv` | Flat exports of the DB. |
 | `catalog/survey_*.md` | The three literature-sweep reports (marine mammals; fish & invertebrates; download endpoints). |
 | `catalog/datasets_*.csv`, `species_sounds_*.csv` | The survey tables as CSV. |
@@ -27,15 +27,16 @@ Built 2026-09-19. **The 16 GB of audio is not in git.** Run `./fetch_data.sh` (n
 | Watkins Marine Mammal Sound Database, all cuts (WHOI; HF mirror `ivangtorre/watkins-marine-mammal-full-cuts`) | 15,248 | 28.2 | 52 marine mammal species (baleen & toothed whales, dolphins, porpoises, 14 seals/sea lions/walrus, sea otter) | species (via Watkins code) + call-type keywords mined from the recordist notes; date, location, lat/lon, sample rate 600 Hz–192 kHz | free for personal/academic (non-commercial) use |
 | ReefSet v1.0 (UCL / Google SurfPerch; Zenodo 11071202) | 57,074 | 30.4 | reef biophony, 16 datasets, 12 countries: humpback, plainfin midshipman, black grouper, red hind, Ambon damselfish, squirrelfish, damselfish, dolphins, sea urchins, snapping shrimp, 20 unidentified fish call types, plus ambient/boat/waves negatives | 37 classes, 1.88 s @ 16 kHz | CC BY 4.0 |
 | ToadFishFinder v4 (NC State; Zenodo 8225808) | 20,914 | 7.8 | oyster toadfish *Opsanus tau* boatwhistles (10,018) vs other sounds (10,896) | binary, 1.35 s @ 24 kHz, Pamlico Sound NC | CC0 |
-| Cornell/Marinexplore Whale Detection Challenge (Kaggle 2013) via the timeseriesclassification.com `RightWhaleCalls` mirror | 12,896 | 7.2 | North Atlantic right whale *Eubalaena glacialis* upcalls (6,448) vs noise (6,448), Cornell MARU buoys, Massachusetts Bay | binary, 2 s @ 2 kHz; train/test split preserved in `source_record_id` | Kaggle competition rules (research) |
+| Cornell/Marinexplore Whale Detection Challenge (Kaggle 2013), full training set via HF `monster-monash/CornellWhaleChallenge` | 30,000 | 16.7 | North Atlantic right whale *Eubalaena glacialis* upcalls (7,027) vs noise (22,973), Cornell MARU buoys, Massachusetts Bay | binary, 2 s @ 2 kHz; MONSTER 5-fold CV index in `note` | Copyright Cornell (Kaggle competition rules, research) |
+| BEANS `hiceas` minke boing set (HICEAS 2017 towed array, NOAA PIFSC) | 1,329 | 11.8 | minke whale *Balaenoptera acutorostrata* boings (680, cut to call) vs 1-min negatives (533) | time-stamped boings @ 22.05 kHz | NOAA public domain |
 | Orcasound Pod.Cast rounds 2, 3 + test (S3 `acoustic-sandbox`) | 887 | 0.5 | Southern Resident killer whales, Orcasound Lab hydrophone 2017/2019 | each labeled call cut to its own clip @ 20 kHz | CC BY-NC-SA 4.0 |
 | Marine sounds < 2 kHz, French Polynesia (Zenodo 12570714) | 1,222 | 3.7 | unidentified reef fish (mainly), 80+ sound-type codes from the published identification key | folder = sound type | CC BY 4.0 |
 | Southern Ocean fishes, Prince Edward Islands (Zenodo 17076825) | 3 | – | unidentified benthic fish: drum, grunt series, pops | | CC BY 4.0 |
 | Bluefin gurnard *Chelidonichthys kumu* (Zenodo 4972259) | 2 | – | growl, grunt | | CC0 |
 
-Totals: **108,246 clips, ~78 hours, 59 species with audio** (30 toothed whales, 8 baleen whales, 14 pinnipeds,
+Totals: **126,563 clips, ~99 hours, 59 species with audio** (30 toothed whales, 8 baleen whales, 14 pinnipeds,
 6 fish, 1 sea otter) plus family-level and unidentified classes. Species with the most audio: oyster toadfish
-(10k), North Atlantic right whale (6.9k), plainfin midshipman (4.7k), killer whale (3.5k), humpback (3.1k), sperm whale (1.3k, 11.7 h).
+(10k), North Atlantic right whale (7.5k), plainfin midshipman (4.7k), killer whale (3.5k), humpback (3.1k), sperm whale (1.3k, 11.7 h).
 
 ## Knowledge layer (no audio, from the literature sweep)
 
@@ -44,7 +45,7 @@ Totals: **108,246 clips, ~78 hours, 59 species with audio** (30 toothed whales, 
   and the paper/page it came from.
 - `datasets`: 75 datasets from the papers (DCLDE 2013–2027, NOAA NEFSC/PIFSC/SanctSound, Antarctic blue/fin
   library, DOCC10, FishSounds.net, Australian fish chorus catalogue, etc.) with host, URL, size, sample rate,
-  label format, license and the papers that used them. `downloaded=1` marks the eight with audio here.
+  label format, license and the papers that used them. `downloaded=1` marks the nine with audio here.
 - `catalog/survey_registries_endpoints.md`: verified bulk-download mechanics (GCS `noaa-passive-bioacoustic`
   bucket layout, Orcasound S3 keys, ONC API, MBARI AWS, Watkins URL patterns via Wayback). Note: WHOI's Watkins
   site was down for maintenance on 2026-09-19 and the Kaggle mirror is a 404; the HF mirrors are the fallback.
@@ -67,7 +68,7 @@ SELECT file_path, sound_type, location FROM v_clips WHERE scientific_name='Orcin
 Caveats for training:
 - Watkins sample rates are heterogeneous (600 Hz–192 kHz); resample. Many recordings are 1950s–1990s analog tape.
 - Watkins `sound_type` is keyword-mined from free text ("Squeals; clicks" → `squeal;click`), not expert call-type annotation.
-- Right whale clips are 2 kHz and float-derived; a few peak at full scale. Class imbalance elsewhere is severe. Toadfish and midshipman dominate fish; common dolphin and false killer whale dominate Watkins.
+- Right whale clips are 2 kHz, 2 s, int16. Class imbalance elsewhere is severe. Toadfish and midshipman dominate fish; common dolphin and false killer whale dominate Watkins.
 - ReefSet species-level labels (`bioph_megnov` etc.) were resolved from the SurfPerch paper's label key; the
   20 "unidentified reef fish" call types are labeled by sound, not species.
 - Licenses differ per source (see `clips.license`). Watkins and Orcasound are non-commercial.
@@ -79,5 +80,5 @@ python3 scripts/build_db.py          # re-extracts audio (skips existing files) 
 ```
 To add a source: drop it under `raw/`, add a `load_<name>()` method following the existing ones, register in `__main__`.
 Good next additions (all open, endpoints in `catalog/survey_registries_endpoints.md`): DCLDE 2027 killer-whale
-ecotype set (225k boxes, 1.6 TB), Antarctic blue/fin library (105k annotations), BEANS `hiceas` minke boings (1.4 GB), the full 30k-clip Kaggle right-whale training set (needs a Kaggle login; the mirror here is the 12.9k balanced subset),
+ecotype set (225k boxes, 1.6 TB), Antarctic blue/fin library (105k annotations), BEANS `hiceas` minke boings (1.4 GB), 
 ANIMAL-SPOT tarball (547 MB), NOAA NEFSC right-whale upcall logs, Belize manatee calls.
