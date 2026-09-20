@@ -1,0 +1,9 @@
+// Copy to wifi_config.h (gitignored) to stream KEIK datagrams over Wi-Fi straight from the board.
+// Without this file the sketch is USB-only and python/main.py on the laptop does the UDP forwarding.
+#pragma once
+
+#define KEIKO_WIFI_SSID  "hotspot name"
+#define KEIKO_WIFI_PSK   "password"          // "" for an open network
+#define KEIKO_UDP_HOST   "192.168.4.2"       // the machine running pipeline/ (make ip there prints it); a hostname works too
+#define KEIKO_UDP_PORT   5005
+#define KEIKO_NODE_ID    1                   // the UNO Q node is 0

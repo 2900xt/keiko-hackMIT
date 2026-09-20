@@ -2,7 +2,8 @@
 
 Piezo hydrophone captured by an ESP32-S3-DevKitC-1 (N8R8) and shipped as sample blocks over USB to
 a laptop, which forwards them to the pipeline over UDP -- same role as the UNO Q node in
-`../unoq`, with the laptop standing in for the UNO Q's Linux side (the S3 has none).
+`../unoq`, with the laptop standing in for the UNO Q's Linux side (the S3 has none). Or, with
+Wi-Fi credentials compiled in, the board sends the UDP stream itself and needs no laptop at all.
 
 ```
 piezos ─► PN2222 Darlington follower ─► GPIO1 (ADC1_CH0, 12-bit, 8 kHz)
@@ -21,6 +22,7 @@ piezos ─► PN2222 Darlington follower ─► GPIO1 (ADC1_CH0, 12-bit, 8 kHz)
 | `sketch/hydro.cpp` | MCU: hardware-timer-paced sampler task, ring of blocks, framed serial sender |
 | `sketch/sketch.ino` | empty stub -- all code is in the `.cpp` so it never touches the `.ino` prototype generator |
 | `sketch/sketch.yaml` | build profile (`esp32:esp32:esp32s3`, native USB CDC, 8 MB flash, octal PSRAM) |
+| `sketch/wifi_config.h.example` | copy to `wifi_config.h` (gitignored) for Wi-Fi mode: SSID, PSK, pipeline address |
 | `python/main.py` | laptop: reads frames from the serial port, health line, UDP forward, WAV log |
 | `python/test_node.py` | offline test of the Python side with synthetic blocks (`make test`) |
 | `python/keiko.env` | settings: UDP destination, node id, serial port |
@@ -104,6 +106,24 @@ make record DURATION=30                      # -> recordings/<utc>.wav (8000 Hz,
 
 The model resamples to 32 kHz itself. Same caveat as the UNO Q: with nothing wired to GPIO1 it still
 reports a species at ~0.5 on pure electrical noise, so check `dc` is 1.5-1.9 V before believing a detection.
+
+### Wi-Fi mode: no laptop
+
+For a buoy in the water. Put the network and the pipeline's address in `sketch/wifi_config.h`
+(copy the `.example`; the file is gitignored) and flash again:
+
+```bash
+cp sketch/wifi_config.h.example sketch/wifi_config.h && $EDITOR sketch/wifi_config.h && make flash
+```
+
+The board joins the network, and for every block sends the same `KEIK` datagram `python/main.py`
+would have built -- `fs` measured on the board, `t_ns` = board µs since boot × 1000 -- straight to
+`KEIKO_UDP_HOST:KEIKO_UDP_PORT`. `pipeline/make live` / `keiko_pipeline.py` need no change. The serial
+frames keep flowing whenever a host is attached, so `make start` still works for a health line during
+setup; unplugged, the sender skips serial so a stalled USB write can never hold up the Wi-Fi path.
+Venue Wi-Fi usually isolates clients from each other -- a phone hotspot is the reliable choice
+(`make ip` in `../../pipeline` or `ipconfig getifaddr en0` gives the laptop's address on it).
+`make check-wifi` compiles this variant without touching your `wifi_config.h`.
 
 ### Settings
 

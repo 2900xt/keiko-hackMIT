@@ -16,6 +16,11 @@
 // wire with no message boundaries, hence the magic + CRC. USB CDC moves
 // ~1 MB/s, so unlike the UNO Q's 115200-baud Bridge the sample rate is limited
 // by the ADC conversion time (~25 us), not the link.
+//
+// Wi-Fi mode (no laptop): if sketch/wifi_config.h exists, the board joins that
+// network and also sends each block as a ready-made KEIK datagram straight to
+// the pipeline -- the packet python/main.py would otherwise build. The serial
+// frames keep flowing whenever a host is attached, so both can be watched.
 
 #include <Arduino.h>
 #include <esp_timer.h>
@@ -23,6 +28,15 @@
 #include <freertos/queue.h>
 #include <freertos/semphr.h>
 #include <freertos/task.h>
+
+#if __has_include("wifi_config.h")
+#include "wifi_config.h"                       // gitignored: copy wifi_config.h.example and fill it in
+#include <WiFi.h>
+#include <WiFiUdp.h>
+#define KEIKO_WIFI 1
+#else
+#define KEIKO_WIFI 0
+#endif
 
 // ---- configuration ---------------------------------------------------------
 static const uint32_t SAMPLE_PERIOD_US = 125;   // 8000 Hz. The 1 MHz timer makes this exact; the Python side still
@@ -39,6 +53,16 @@ struct __attribute__((packed)) FrameHeader {
   uint32_t seq;
   uint32_t t0_us;
   uint32_t dropped;
+  uint16_t n;
+};
+
+// KEIK datagram (see python/main.py PACKET FORMAT); built on the board in Wi-Fi mode
+struct __attribute__((packed)) KeikHeader {
+  char     magic[4];
+  uint8_t  ver, node, fmt, bits;
+  float    fs;
+  uint32_t seq;
+  uint64_t t_ns;
   uint16_t n;
 };
 
@@ -86,10 +110,47 @@ static void sampler(void*) {
   }
 }
 
+// ---- Wi-Fi -----------------------------------------------------------------
+#if KEIKO_WIFI
+static WiFiUDP udp;
+static float   fs_measured = 0;               // from consecutive block timestamps, same estimator as main.py
+static uint32_t last_t0_us = 0;
+static bool     have_last  = false;
+
+static void wifi_begin() {
+  WiFi.mode(WIFI_STA);
+  WiFi.setSleep(false);                       // modem sleep adds 100s of ms of jitter to UDP sends
+  WiFi.begin(KEIKO_WIFI_SSID, KEIKO_WIFI_PSK);
+  WiFi.setAutoReconnect(true);                // dropouts are the node's problem, not the pipeline's
+}
+
+static void send_keik(uint32_t seq, uint32_t t0_us, const uint8_t* data) {
+  if (have_last && seq) {                     // measure fs across consecutive blocks (blocks are never reordered here)
+    uint32_t dt = t0_us - last_t0_us;
+    if (dt) {
+      float fs = BLOCK * 1e6f / dt;
+      fs_measured = fs_measured == 0 ? fs : 0.9f * fs_measured + 0.1f * fs;
+    }
+  }
+  last_t0_us = t0_us; have_last = true;
+  if (WiFi.status() != WL_CONNECTED) return;
+
+  KeikHeader k = {{'K', 'E', 'I', 'K'}, 1, KEIKO_NODE_ID, 0, (uint8_t)ADC_BITS, fs_measured, seq,
+                  (uint64_t)esp_timer_get_time() * 1000ULL, (uint16_t)BLOCK};
+  udp.beginPacket(KEIKO_UDP_HOST, KEIKO_UDP_PORT);
+  udp.write(reinterpret_cast<const uint8_t*>(&k), sizeof k);
+  udp.write(data, BLOCK * sizeof(int16_t));
+  udp.endPacket();
+}
+#endif
+
 // ---- Arduino ---------------------------------------------------------------
 void setup() {
   Serial.begin(921600);                       // baud is ignored on native USB CDC; matters only if Serial is a UART
   Serial.setTxTimeoutMs(50);                  // no host reading -> writes give up instead of stalling the sender
+#if KEIKO_WIFI
+  wifi_begin();
+#endif
   analogReadResolution(ADC_BITS);
   analogSetPinAttenuation(ADC_PIN, ADC_11db); // 0..~3.1 V full scale; the follower idles at ~1.7 V
   analogRead(ADC_PIN);                        // first call does the channel setup; do it before the timer starts
@@ -113,6 +174,10 @@ void loop() {
   uint16_t crc = crc16_ccitt(0xFFFF, reinterpret_cast<const uint8_t*>(&h), sizeof h);
   crc = crc16_ccitt(crc, data, BLOCK * sizeof(int16_t));
 
+#if KEIKO_WIFI
+  send_keik(h.seq, h.t0_us, data);
+  if (!Serial) return;                        // no host on USB: don't let a backpressured CDC write slow the Wi-Fi path
+#endif
   Serial.write(reinterpret_cast<const uint8_t*>(&h), sizeof h);
   Serial.write(data, BLOCK * sizeof(int16_t));
   Serial.write(reinterpret_cast<const uint8_t*>(&crc), sizeof crc);
