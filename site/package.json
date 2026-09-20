@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "scripts": {
-    "sync-data": "rm -rf public/data && cp -R data public/data",
+    "sync-data": "rm -rf public/data && mkdir -p public && cp -R data public/data",
     "predev": "npm run sync-data",
     "dev": "next dev",
     "prebuild": "npm run sync-data",
