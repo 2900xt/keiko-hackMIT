@@ -1,23 +1,47 @@
 # Keiko UNO Q hydrophone node.
 #
-#   make core      one-time: install arduino-cli + the arduino:zephyr core on this Mac
-#   make check     compile the sketch locally (syntax/type check only — the MCU can only be flashed from the board)
-#   make deploy    copy this app to the board
-#   make start     compile + flash the sketch and start the Python side, on the board
-#   make logs      tail the app's output
-#   make stop
+# On this Mac
+#   make core        one-time: install arduino-cli + the arduino:zephyr core (~1 GB)
+#   make check       compile the sketch locally (type check; the MCU itself is always flashed from the board's Linux side)
+#   make venv        one-time: .venv with numpy + msgpack for `make test`
+#   make test        offline test of the Python side with synthetic blocks
 #
-# BOARD is the UNO Q's hostname or IP (ssh user is `arduino`).
+# On the board (default transport: USB-C + adb -- works on a fresh board, no Wi-Fi or SSH needed)
+#   make start       deploy the app, compile + flash the MCU, start the Python side
+#   make logs        last 30 lines of the app's output          make follow    stream it
+#   make stop        stop the app                               make shell     shell on the board
+#   make ip          board hostname + IP                        make listen    receive the UDP stream here (see below)
+#
+# Over Wi-Fi instead: `make enable-ssh` once over USB, then add `VIA=ssh BOARD=<ip or name.local>` to any target.
+#
+# App settings (UDP destination etc.) live in python/keiko.env, not app.yaml -- App Lab's manifest has no env section.
+# To receive the stream on this Mac: put this Mac's IP in KEIKO_UDP_HOST there, `make start`, then `make listen`.
 
-BOARD    ?= arduino-uno-q.local
-USER     ?= arduino
-APP_DIR  ?= ArduinoApps/keiko-unoq
+APP_NAME ?= keiko-unoq
+APP_DIR  ?= /home/arduino/ArduinoApps/$(APP_NAME)
+VIA      ?= adb
+BOARD    ?= uno-q.local
+# (SSH_USER, not USER: the shell already exports USER as your Mac login, and ?= would keep it)
+SSH_USER ?= arduino
+STAGE    ?= /tmp/$(APP_NAME)
+PORT     ?= 5005
 FQBN     := arduino:zephyr:unoq
-SSH      := ssh $(USER)@$(BOARD)
-PYTHON   ?= python3   # needs numpy (pip install -r python/requirements.txt)
+PYTHON   ?= $(if $(wildcard .venv/bin/python),.venv/bin/python,python3)
+# adb: Homebrew's android-platform-tools if present, else the copy the arduino:zephyr core installs
+ADB      ?= $(firstword $(shell command -v adb 2>/dev/null) $(wildcard $(HOME)/Library/Arduino15/packages/arduino/tools/adb/*/adb))
+EXCLUDES := --exclude .venv --exclude __pycache__ --exclude '*.wav' --exclude .cache --exclude Makefile --exclude .DS_Store
 
-.PHONY: core check deploy start stop logs test
+ifeq ($(VIA),ssh)
+  RUN    = ssh $(SSH_USER)@$(BOARD)
+  DEPLOY = rsync -a --delete $(EXCLUDES) ./ $(SSH_USER)@$(BOARD):$(APP_DIR)/
+else
+  RUN    = $(ADB) shell
+  DEPLOY = rsync -a --delete $(EXCLUDES) ./ $(STAGE)/ && $(ADB) push --sync $(STAGE) $(dir $(APP_DIR))
+endif
 
+.PHONY: core check venv test deploy start restart stop logs follow shell ip enable-ssh listen adb-check
+
+# ---- Mac-side --------------------------------------------------------------
 core:
 	@command -v arduino-cli >/dev/null || brew install arduino-cli
 	arduino-cli core update-index
@@ -29,18 +53,46 @@ CTAGS_DIR := $(shell command -v ctags >/dev/null && dirname $$(command -v ctags)
 check:
 	arduino-cli compile --profile default $(if $(CTAGS_DIR),--build-property "tools.ctags.path=$(CTAGS_DIR)") sketch
 
-deploy:
-	$(SSH) "mkdir -p $(APP_DIR)"
-	rsync -av --delete --exclude '*.wav' --exclude '__pycache__' ./ $(USER)@$(BOARD):$(APP_DIR)/
-
-start: deploy
-	$(SSH) "arduino-app-cli app start ~/$(APP_DIR)"
-
-stop:
-	$(SSH) "arduino-app-cli app stop ~/$(APP_DIR)"
-
-logs:
-	$(SSH) "arduino-app-cli app logs ~/$(APP_DIR)"
+venv:
+	python3 -m venv .venv && .venv/bin/pip install -q -r python/requirements.txt
 
 test:
 	$(PYTHON) python/test_node.py
+
+listen:
+	$(PYTHON) python/udp_listen.py $(PORT)
+
+# ---- board-side ------------------------------------------------------------
+adb-check:
+ifneq ($(VIA),ssh)
+	@test -n "$(ADB)" || { echo "adb not found: brew install android-platform-tools (or make core)"; exit 1; }
+	@$(ADB) get-state >/dev/null 2>&1 || { echo "no UNO Q on USB (adb sees no device). Plug it in directly, wait ~1 min, retry."; exit 1; }
+endif
+
+deploy: adb-check
+	$(RUN) "mkdir -p $(APP_DIR)"
+	$(DEPLOY)
+
+start: deploy
+	$(RUN) "arduino-app-cli app restart $(APP_DIR)"
+
+restart: start
+
+stop: adb-check
+	$(RUN) "arduino-app-cli app stop $(APP_DIR)"
+
+logs: adb-check
+	$(RUN) "arduino-app-cli app logs --tail 30 $(APP_DIR)"
+
+follow: adb-check
+	$(RUN) "arduino-app-cli app logs --follow $(APP_DIR)"
+
+shell: adb-check
+	$(RUN)
+
+ip: adb-check
+	$(RUN) "hostname; hostname -I"
+
+# Turns on SSH (App Lab's "network mode"). Needed once before VIA=ssh; the board must already be on Wi-Fi.
+enable-ssh:
+	$(ADB) shell "arduino-app-cli system network-mode enable"

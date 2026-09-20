@@ -11,8 +11,13 @@ then:
 Runs under `arduino-app-cli app start` (uses arduino.app_utils). If that package
 is missing it falls back to talking MessagePack-RPC to the router socket directly.
 
-Environment:
-  KEIKO_UDP_HOST   default 127.0.0.1      pipeline receiver
+Configuration (environment variables, or python/keiko.env next to this file --
+App Lab's app.yaml has no env section, so the file is how the app is configured
+when it runs under `arduino-app-cli`; real environment variables take precedence):
+  KEIKO_UDP_HOST   default auto           pipeline receiver. "auto" = the board's own
+                                          Linux side: the Docker gateway when App Lab
+                                          runs us in a container (127.0.0.1 in there is
+                                          the container itself), else 127.0.0.1
   KEIKO_UDP_PORT   default 5005
   KEIKO_NODE_ID    default 0              node id in the packet header
   KEIKO_WAV        default unset          path to append a 16-bit mono WAV log
@@ -44,7 +49,47 @@ METHOD = "hydro/block"
 ADC_BITS = 14
 VREF = 3.3
 
-UDP_HOST = os.environ.get("KEIKO_UDP_HOST", "127.0.0.1")
+ENV_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "keiko.env")
+
+
+def load_env_file(path=ENV_FILE):
+    """KEY=VALUE lines (# comments allowed) into os.environ, without overriding what is already set."""
+    try:
+        with open(path) as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                k, v = line.split("=", 1)
+                os.environ.setdefault(k.strip(), v.strip().strip("\"'"))
+    except OSError:
+        pass
+
+
+def docker_gateway():
+    """Address of the host as seen from inside a Docker bridge network; None when not in a container."""
+    if not os.path.exists("/.dockerenv"):
+        return None
+    try:
+        with open("/proc/net/route") as f:
+            for line in f.readlines()[1:]:
+                fields = line.split()
+                if len(fields) > 2 and fields[1] == "00000000":
+                    return socket.inet_ntoa(struct.pack("<L", int(fields[2], 16)))
+    except (OSError, ValueError):
+        pass
+    return None
+
+
+def resolve_udp_host(value):
+    """'auto' / 'host' -> the board's Linux side, whether or not we are inside App Lab's container."""
+    if value.strip().lower() in ("", "auto", "host"):
+        return docker_gateway() or "127.0.0.1"
+    return value.strip()
+
+
+load_env_file()
+UDP_HOST = resolve_udp_host(os.environ.get("KEIKO_UDP_HOST", "auto"))
 UDP_PORT = int(os.environ.get("KEIKO_UDP_PORT", "5005"))
 NODE_ID = int(os.environ.get("KEIKO_NODE_ID", "0"))
 WAV_PATH = os.environ.get("KEIKO_WAV")
@@ -173,7 +218,8 @@ def run_router_socket(node, path="/var/run/arduino-router.sock"):
 
 def main():
     node = Node()
-    print(f"keiko unoq node -> udp {UDP_HOST}:{UDP_PORT}" + (f", wav {WAV_PATH}" if WAV_PATH else ""), flush=True)
+    where = "docker gateway = board host" if docker_gateway() == UDP_HOST else "configured"
+    print(f"keiko unoq node -> udp {UDP_HOST}:{UDP_PORT} ({where})" + (f", wav {WAV_PATH}" if WAV_PATH else ""), flush=True)
     try:
         import arduino.app_utils  # noqa: F401
     except ImportError:

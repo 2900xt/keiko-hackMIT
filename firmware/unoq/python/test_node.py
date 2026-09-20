@@ -9,6 +9,7 @@ import wave
 
 import numpy as np
 
+os.environ["KEIKO_UDP_HOST"] = "127.0.0.1"
 os.environ["KEIKO_UDP_PORT"] = "5599"
 os.environ["KEIKO_WAV"] = os.path.join(tempfile.mkdtemp(), "test.wav")
 os.environ["KEIKO_QUIET"] = "1"

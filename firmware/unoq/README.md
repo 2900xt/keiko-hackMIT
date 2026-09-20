@@ -22,7 +22,10 @@ piezos ─► PN2222 Darlington follower ─► A0 (14-bit ADC, ~3.3 kHz)
 | `sketch/sketch.yaml` | build profile (`arduino:zephyr:unoq`) |
 | `python/main.py` | Linux: receives blocks, health line, UDP forward, WAV log |
 | `python/test_node.py` | offline test of the Python side with synthetic blocks (`make test`) |
+| `python/keiko.env` | settings: UDP destination, node id, WAV log (app.yaml can't carry env vars) |
+| `python/udp_listen.py` | receiver that prints what the UDP stream delivers (`make listen`) |
 | `app.yaml` | App Lab / `arduino-app-cli` manifest |
+| `Makefile` | `make start` / `logs` / `stop` … over USB (adb) or Wi-Fi (ssh) |
 
 ## Analog front end (3.3 V — the UNO Q is not 5 V tolerant)
 
@@ -47,7 +50,7 @@ Output idles at ~1.7 V. The health line prints `dc=…V`; if it isn't 1.5–1.9 
 
 ## Run
 
-One-time on the Mac (installs arduino-cli + the `arduino:zephyr` core, ~1 GB):
+One-time on the Mac (installs arduino-cli + the `arduino:zephyr` core, ~1 GB; that core also brings `adb`):
 
 ```bash
 make core
@@ -59,14 +62,26 @@ Compile check without a board (Apple Silicon: `brew install universal-ctags` fir
 make check
 ```
 
-Deploy and run on the board (compiles + flashes the MCU on-device, then starts the Python side):
+Offline test of the Python side (`make venv` once to get numpy + msgpack):
 
 ```bash
-make start BOARD=<uno-q ip or hostname>
+make venv && make test
 ```
 
+Deploy and run on the board — plug the UNO Q into the Mac with USB-C (directly, no hub), wait for the
+heartbeat on the LED matrix, then:
+
 ```bash
-make logs BOARD=<uno-q ip or hostname>
+make start
+```
+
+That pushes this folder to `~/ArduinoApps/keiko-unoq` on the board over adb and runs `arduino-app-cli app restart`
+there, which compiles the sketch on the board, flashes the MCU over SWD, and starts `python/main.py` in a container.
+First run takes ~2 min (numpy install); later runs ~20 s.
+
+```bash
+make logs      # last 30 lines        make follow   # stream
+make stop      make shell             make ip
 ```
 
 Expect a line per second like:
@@ -75,11 +90,24 @@ Expect a line per second like:
 fs= 3333.3Hz blocks/s= 13 dc=1.71V rms=  4.2mV peak= 31.0mV mcu_drops=0 missing=0
 ```
 
-Environment for the Python side (set in `app.yaml` or the shell): `KEIKO_UDP_HOST`, `KEIKO_UDP_PORT`,
-`KEIKO_NODE_ID`, `KEIKO_WAV=/home/arduino/hydro.wav`, `KEIKO_QUIET`.
+Over Wi-Fi instead of USB: a fresh board has SSH off. Run `make enable-ssh` once over USB, then add
+`VIA=ssh BOARD=<ip or name.local>` to any target (`make ip` prints the address).
+
+### Settings
+
+`python/keiko.env` — read by `main.py` at startup; real environment variables override it. App Lab's `app.yaml`
+cannot carry environment variables, so this file is the configuration. Keys: `KEIKO_UDP_HOST` (default `auto`),
+`KEIKO_UDP_PORT` (5005), `KEIKO_NODE_ID` (0), `KEIKO_WAV` (path on the board, e.g. `/app/python/hydro.wav`),
+`KEIKO_QUIET`.
+
+App Lab runs the Python side in a Docker container on its own bridge network, so `127.0.0.1` in there is the
+container, not the board. `KEIKO_UDP_HOST=auto` sends to the container's default gateway, which is the board's
+Linux side — a pipeline running on the UNO Q listens on `0.0.0.0:5005` and gets every block. To receive on a
+laptop instead, put the laptop's IP there (same network as the board), `make start`, then `make listen`
+(`python/udp_listen.py`, prints packets/s, sample rate, and missing sequence numbers).
 
 The Python side also runs outside App Lab (`python3 python/main.py` on the board) — it falls back to
-speaking MessagePack-RPC to `/var/run/arduino-router.sock` directly.
+speaking MessagePack-RPC to `/var/run/arduino-router.sock` directly, and `auto` then means `127.0.0.1`.
 
 ## UDP packet (proposal for all nodes)
 
