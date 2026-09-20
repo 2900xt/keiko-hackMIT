@@ -11,7 +11,6 @@
 <body>
   <header>
     <h1>Keiko</h1>
-    <p class="sub">One buoy, Charles River, off MIT. Synthetic data.</p>
   </header>
 
   <main>
@@ -25,19 +24,13 @@
       <table class="status">
         <tr><th>ID</th><td id="s-id">—</td></tr>
         <tr><th>State</th><td id="s-state">—</td></tr>
-        <tr><th>Latitude</th><td id="s-lat">—</td></tr>
-        <tr><th>Longitude</th><td id="s-lon">—</td></tr>
-        <tr><th>Battery</th><td><span id="s-batt">—</span><span class="batt"><i id="s-batt-bar"></i></span></td></tr>
-        <tr><th>Water temp</th><td id="s-temp">—</td></tr>
-        <tr><th>Uptime</th><td id="s-uptime">—</td></tr>
+        <tr><th>Position</th><td id="s-pos">—</td></tr>
         <tr><th>Last update</th><td id="s-time">—</td></tr>
       </table>
     </section>
 
-    <section class="panel">
+    <section class="panel hydro-panel">
       <h2>Live hydrophone</h2>
-      <p class="label">Waveform</p>
-      <canvas id="wave" width="800" height="120"></canvas>
       <p class="label">Spectrogram, 0–1 kHz, last 30 s</p>
       <canvas id="spec" width="600" height="160"></canvas>
       <p class="label" id="spec-note">Level: — dB</p>

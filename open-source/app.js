@@ -17,13 +17,7 @@
   feed.on('telemetry', (t) => {
     last = Date.now();
     $('s-id').textContent = t.id;
-    $('s-lat').textContent = t.lat.toFixed(5);
-    $('s-lon').textContent = t.lon.toFixed(5);
-    $('s-batt').textContent = t.battery_pct + '%';
-    $('s-batt-bar').style.width = t.battery_pct + '%';
-    $('s-temp').textContent = t.water_temp_c.toFixed(1) + ' °C';
-    const h = Math.floor(t.uptime_s / 3600), m = Math.floor((t.uptime_s % 3600) / 60);
-    $('s-uptime').textContent = h + 'h ' + m + 'm';
+    $('s-pos').textContent = t.lat.toFixed(5) + ', ' + t.lon.toFixed(5);
     $('s-time').textContent = new Date(t.ts).toLocaleTimeString();
     marker.setLatLng([t.lat, t.lon]);
   });
@@ -35,19 +29,10 @@
   }, 1000);
 
   // hydrophone
-  const wave = $('wave').getContext('2d'), spec = $('spec').getContext('2d');
-  const WW = $('wave').width, WH = $('wave').height, SW = $('spec').width, SH = $('spec').height;
+  const spec = $('spec').getContext('2d');
+  const SW = $('spec').width, SH = $('spec').height;
   spec.fillStyle = '#fff'; spec.fillRect(0, 0, SW, SH);
 
-  function drawWave(s) {
-    wave.fillStyle = '#fff'; wave.fillRect(0, 0, WW, WH);
-    wave.strokeStyle = '#111'; wave.lineWidth = 1.2; wave.beginPath();
-    for (let i = 0; i < s.length; i++) {
-      const x = i / (s.length - 1) * WW, y = WH / 2 - s[i] * WH * 0.45;
-      i ? wave.lineTo(x, y) : wave.moveTo(x, y);
-    }
-    wave.stroke();
-  }
   function drawSpec(b) {
     const col = 1; // 600 px wide, 20 fps → 30 s of history
     spec.drawImage($('spec'), -col, 0);
@@ -58,7 +43,7 @@
       spec.fillRect(SW - col, SH - (i + 1) * cell, Math.ceil(col), Math.ceil(cell));
     }
   }
-  feed.on('audio', (a) => { drawWave(a.samples); drawSpec(a.bins); $('spec-note').textContent = 'Level: ' + a.level_db + ' dB'; });
+  feed.on('audio', (a) => { drawSpec(a.bins); $('spec-note').textContent = 'Level: ' + a.level_db + ' dB'; });
 
   feed.start();
 })();
