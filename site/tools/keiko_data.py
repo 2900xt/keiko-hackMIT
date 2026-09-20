@@ -17,7 +17,7 @@ Commands
 
 Examples
   python3 tools/keiko_data.py add --wav call.wav --buoy KEIKO-01 \
-      --time 2026-09-20T14:03:11Z --lat 42.33 --lon -70.28 --confidence 0.87
+      --time 2026-09-20T14:03:11Z --lat 42.34 --lon -70.97 --confidence 0.87
   python3 tools/keiko_data.py rebuild
   python3 tools/keiko_data.py synth --n 24 --seed 1
 """

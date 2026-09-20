@@ -100,7 +100,7 @@ at ~0.5 on pure electrical noise, so keep `--min_conf` high and check `dc` is 1.
 believing a detection. To archive a detection on the website:
 
 ```bash
-../../site/tools/keiko_data.py add --wav recordings/<utc>.wav --buoy KEIKO-01 --time <utc> --lat 42.33 --lon -70.28 --confidence 0.87 --species "Eubalaena glacialis"
+../../site/tools/keiko_data.py add --wav recordings/<utc>.wav --buoy KEIKO-01 --time <utc> --lat 42.34 --lon -70.97 --confidence 0.87 --species "Eubalaena glacialis"
 ```
 
 then commit and push (`site/tools/requirements.txt` lists its deps; the whale_cnn venv already has them).

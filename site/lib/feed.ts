@@ -1,29 +1,46 @@
-// Synthetic buoy feed. Same event shapes a real buoy would send.
-//   telemetry: { id, ts, lat, lon, battery_pct, water_temp_c, uptime_s }   every 2 s
-//   audio:     { ts, samples: Float32Array, bins: Float32Array, level_db }  20 / s
-//   detection: { id, ts, lat, lon, confidence, f0, sweep, duration_s }        when a call ends
+// Buoy feed: the same event shapes whether they come from the central server
+// (server/keiko_server.py over a WebSocket) or are generated in the browser.
+//   buoys:     Buoy[]                                                    the array, on connect and when it changes
+//   telemetry: { id, ts, lat, lon, battery_pct?, water_temp_c?, uptime_s?, simulated? }   every 2 s per buoy
+//   audio:     { ts, samples: Float32Array, bins: Float32Array, level_db }  ~15-20 / s, the real buoy's hydrophone
+//   window:    { ts, label, species?, conf, whale }                      one per classifier window ("hearing now")
+//   detection: { id, ts, lat, lon, confidence, ..., species?, fix? }     when a call ends; lat/lon is the fix when there is one
+//   track:     { id, species, points[] }                                 after each detection, the track it joined
+//   status:    { connected, node_online, synthetic }                    link state
 //
-// To go live, replace createFeed() with a WebSocket client that emits the same
-// three events.
+// createFeed() connects to NEXT_PUBLIC_KEIKO_WS (in `npm run dev`: ws://localhost:8765) and falls back to the
+// synthetic generator when no server answers; the static build has no server and is always synthetic.
 
-export interface Buoy { id: string; lat: number; lon: number }
+export interface Buoy { id: string; lat: number; lon: number; simulated?: boolean }
 
 export interface Telemetry {
   id: string; ts: string; lat: number; lon: number;
-  battery_pct: number; water_temp_c: number; uptime_s: number;
+  battery_pct?: number; water_temp_c?: number; uptime_s?: number; simulated?: boolean;
 }
 export interface AudioFrame { ts: string; samples: Float32Array; bins: Float32Array; level_db: number }
+export interface Hearing { ts: string; label: string; species?: string | null; conf: number; whale: boolean; in_event?: boolean }
+export interface Arrival { buoy_id: string; dt_ms: number; range_m: number; simulated: boolean }
+export interface Fix {
+  lat: number; lon: number; err_m: number; method: "tdoa"; c_m_s: number;
+  arrivals: Arrival[]; simulated_buoys: string[];
+}
 export interface LiveDetection {
   id: string; ts: string; lat: number; lon: number;
   confidence: number; f0: number; sweep: number; duration_s: number;
+  buoy_id?: string; species?: string; fix?: Fix; track_id?: string;
 }
+export interface Track { id: string; species: string; started: string; points: { ts: string; lat: number; lon: number; err_m: number; id: string }[] }
+export interface Status { connected: boolean; node_online: boolean; synthetic: boolean }
 
-export interface FeedEvents { telemetry: Telemetry; audio: AudioFrame; detection: LiveDetection }
+export interface FeedEvents {
+  buoys: Buoy[]; telemetry: Telemetry; audio: AudioFrame; window: Hearing;
+  detection: LiveDetection; track: Track; status: Status;
+}
 export type FeedHandler<K extends keyof FeedEvents> = (payload: FeedEvents[K]) => void;
 
 export interface Feed {
-  buoy: Buoy;
-  synthetic: boolean; // true while the feed is generated in the browser; the UI says so
+  buoy: Buoy;         // the physical buoy this page is "about" (its telemetry drives the rail)
+  synthetic: boolean; // true when created without a server URL; see the status event for the live state
   on<K extends keyof FeedEvents>(type: K, fn: FeedHandler<K>): () => void;
   start(): void;
   stop(): void;
@@ -33,13 +50,13 @@ export interface Feed {
 const rand = (a: number, b: number) => a + Math.random() * (b - a);
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
-// Stellwagen Bank, Massachusetts Bay: ~25 nmi east of Boston, where the whales are.
-export const BUOY: Buoy = { id: "KEIKO-01", lat: 42.33, lon: -70.28 };
+// Boston Harbor: President Roads, between Deer Island and Long Island.
+export const BUOY: Buoy = { id: "KEIKO-01", lat: 42.34, lon: -70.97 };
 const NSAMP = 256, NBINS = 80;
 
 interface Call { f0: number; sweep: number; amp: number; t0: number; t1: number }
 
-export function createFeed(): Feed {
+export function createSyntheticFeed(): Feed {
   const handlers: { [K in keyof FeedEvents]?: FeedHandler<K>[] } = {};
   const st = { batt: rand(80, 95), temp: rand(17, 19), uptime: Math.floor(rand(3600, 36000)), call: null as Call | null };
   const samples = new Float32Array(NSAMP), bins = new Float32Array(NBINS);
@@ -126,10 +143,106 @@ export function createFeed(): Feed {
 
   function start() {
     if (timers.length) return;
+    emit("buoys", [BUOY]);
+    emit("status", { connected: true, node_online: true, synthetic: true });
     telemetry();
     timers = [setInterval(telemetry, 2000), setInterval(audio, 50)];
   }
   function stop() { timers.forEach(clearInterval); timers = []; }
 
   return { on, start, stop, backfill, buoy: BUOY, synthetic: true };
+}
+
+// ---- the real thing: server/keiko_server.py over a WebSocket -----------------
+const FALLBACK_AFTER_MS = 4000; // no server within this: run the synthetic feed until one appears
+
+export function createLiveFeed(url: string): Feed {
+  const handlers: { [K in keyof FeedEvents]?: FeedHandler<K>[] } = {};
+  let ws: WebSocket | null = null, running = false, everConnected = false, retry = 1000;
+  let timer: ReturnType<typeof setTimeout> | null = null, fallbackTimer: ReturnType<typeof setTimeout> | null = null;
+  let fallback: Feed | null = null, unsubs: (() => void)[] = [];
+  let nodeOnline = false;
+
+  function on<K extends keyof FeedEvents>(type: K, fn: FeedHandler<K>) {
+    const list = (handlers[type] ??= []) as FeedHandler<K>[];
+    list.push(fn);
+    return () => { const i = list.indexOf(fn); if (i >= 0) list.splice(i, 1); };
+  }
+  function emit<K extends keyof FeedEvents>(type: K, payload: FeedEvents[K]) {
+    ((handlers[type] ?? []) as FeedHandler<K>[]).forEach((fn) => fn(payload));
+  }
+  function status(connected: boolean) {
+    emit("status", { connected, node_online: connected && nodeOnline, synthetic: !!fallback });
+  }
+
+  function startFallback() {
+    if (fallback || !running) return;
+    fallback = createSyntheticFeed();
+    const types: (keyof FeedEvents)[] = ["buoys", "telemetry", "audio", "detection"];
+    unsubs = types.map((t) => fallback!.on(t, (p) => emit(t, p as never)));
+    fallback.start();
+  }
+  function stopFallback() {
+    if (!fallback) return;
+    unsubs.forEach((u) => u()); unsubs = [];
+    fallback.stop(); fallback = null;
+  }
+
+  function handle(msg: Record<string, unknown>) {
+    const type = msg.type as string;
+    if (type === "hello") {
+      nodeOnline = !!msg.node_online;
+      emit("buoys", msg.buoys as Buoy[]);
+      for (const d of (msg.detections as LiveDetection[]) ?? []) emit("detection", d);
+      for (const t of (msg.tracks as Track[]) ?? []) emit("track", t);
+      status(true);
+    } else if (type === "status") {
+      nodeOnline = !!msg.node_online; status(true);
+    } else if (type === "audio") {
+      emit("audio", { ts: msg.ts as string, samples: Float32Array.from(msg.samples as number[]), bins: Float32Array.from(msg.bins as number[]), level_db: msg.level_db as number });
+    } else if (type === "telemetry" || type === "window" || type === "detection" || type === "track" || type === "buoys") {
+      emit(type, msg as never);
+    }
+  }
+
+  function connect() {
+    if (!running) return;
+    try { ws = new WebSocket(url); } catch { schedule(); return; }
+    ws.onopen = () => {
+      everConnected = true; retry = 1000;
+      if (fallbackTimer) { clearTimeout(fallbackTimer); fallbackTimer = null; }
+      stopFallback();
+      ws?.send(JSON.stringify({ role: "browser" }));
+    };
+    ws.onmessage = (e) => { try { handle(JSON.parse(e.data)); } catch { /* ignore malformed */ } };
+    ws.onclose = () => { ws = null; status(false); if (everConnected) startFallback(); schedule(); };
+    ws.onerror = () => { ws?.close(); };
+  }
+  function schedule() {
+    if (!running || timer) return;
+    timer = setTimeout(() => { timer = null; connect(); }, retry);
+    retry = Math.min(retry * 2, 10000);
+  }
+
+  function start() {
+    if (running) return;
+    running = true;
+    status(false);
+    fallbackTimer = setTimeout(() => { fallbackTimer = null; if (!everConnected) startFallback(); }, FALLBACK_AFTER_MS);
+    connect();
+  }
+  function stop() {
+    running = false;
+    if (timer) { clearTimeout(timer); timer = null; }
+    if (fallbackTimer) { clearTimeout(fallbackTimer); fallbackTimer = null; }
+    stopFallback();
+    ws?.close(); ws = null;
+  }
+
+  return { on, start, stop, backfill: () => [], buoy: BUOY, synthetic: false };
+}
+
+export function createFeed(): Feed {
+  const url = process.env.NEXT_PUBLIC_KEIKO_WS ?? (process.env.NODE_ENV === "development" ? "ws://localhost:8765" : "");
+  return url ? createLiveFeed(url) : createSyntheticFeed();
 }

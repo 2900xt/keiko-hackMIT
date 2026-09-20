@@ -25,7 +25,7 @@ const DetectionRow = memo(function DetectionRow({ d, origin, onHover, onSelect, 
       </td>
       <td>
         {d.lat.toFixed(5)}, {d.lon.toFixed(5)}
-        <span className="sub">{offsetFrom(origin, d)} · {Math.round(d.f0)} Hz · {d.duration_s} s</span>
+        <span className="sub">{offsetFrom(origin, d)} · {d.species ?? Math.round(d.f0) + " Hz"} · {d.duration_s} s{d.fix ? " · ±" + Math.round(d.fix.err_m) + " m" : ""}</span>
       </td>
       <td>
         <span className="conf">

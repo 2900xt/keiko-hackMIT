@@ -2,7 +2,7 @@
 
 Website + detection database for the Keiko buoys. The database is the `data/` folder (see `data/README.md`); the site reads it directly, so publishing this folder with GitHub Pages gives one URL for both.
 
-Next.js (App Router, TypeScript), exported as a static site. `/` is the landing page; the app (live map + database) lives at `/app/`. One buoy on Stellwagen Bank in Massachusetts Bay, on synthetic data.
+Next.js (App Router, TypeScript), exported as a static site. `/` is the landing page; the app (live map + database) lives at `/app/`. One buoy in Boston Harbor, on synthetic data.
 
 ```sh
 npm install

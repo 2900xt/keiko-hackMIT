@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createFeed, type Telemetry } from "@/lib/feed";
+import { createFeed, type Buoy, type Hearing, type Status, type Telemetry, type Track } from "@/lib/feed";
 import { fromArchive, fromLive, loadArchive, loadBuoy, type BuoyInfo, type Detection } from "@/lib/detections";
 import { useFeedEvent, useNow, usePlayer } from "@/lib/hooks";
 import Header from "./Header";
@@ -29,11 +29,19 @@ export default function KeikoApp() {
     document.getElementById(view === "db" ? "view-db" : "view-live")?.focus();
   }, [view]);
 
-  // ---------- buoy ----------
-  const [telemetry, setTelemetry] = useState<Telemetry | null>(null);
+  // ---------- buoys ----------
+  const [buoys, setBuoys] = useState<Buoy[]>([feed.buoy]);
+  const [status, setStatus] = useState<Status>({ connected: false, node_online: false, synthetic: feed.synthetic });
+  const [telemetry, setTelemetry] = useState<Telemetry | null>(null);   // the physical buoy's
   const [lastAt, setLastAt] = useState(0);
   const [buoyInfo, setBuoyInfo] = useState<BuoyInfo | null | undefined>(undefined); // undefined = loading
-  useFeedEvent(feed, "telemetry", (t) => { setTelemetry(t); setLastAt(Date.now()); });
+  useFeedEvent(feed, "buoys", setBuoys);
+  useFeedEvent(feed, "status", setStatus);
+  useFeedEvent(feed, "telemetry", (t) => { if (t.id === feed.buoy.id) { setTelemetry(t); setLastAt(Date.now()); } });
+  const [hearing, setHearing] = useState<Hearing | null>(null);
+  useFeedEvent(feed, "window", setHearing);
+  const [tracks, setTracks] = useState<Track[]>([]);
+  useFeedEvent(feed, "track", (t) => setTracks((xs) => [...xs.filter((x) => x.id !== t.id), t]));
   useEffect(() => {
     let alive = true;
     loadBuoy(feed.buoy.id).then((b) => alive && setBuoyInfo(b)).catch(() => alive && setBuoyInfo(null));
@@ -69,7 +77,7 @@ export default function KeikoApp() {
   // New calls are announced to screen readers; sighted users see the row flash.
   const [announce, setAnnounce] = useState("");
   useFeedEvent(feed, "detection", (d) => {
-    setDetections((xs) => [...xs, fromLive(d, feed.buoy.id, true)]);
+    setDetections((xs) => xs.some((x) => x.id === d.id) ? xs : [...xs, fromLive(d, feed.buoy.id, true)]);
     setAnnounce("New detection, " + Math.round(d.confidence * 100) + "% confidence, " + new Date(d.ts).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }));
   });
 
@@ -101,6 +109,7 @@ export default function KeikoApp() {
         buoyId={telemetry?.id ?? "—"} position={position} telemetry={telemetry} buoyInfo={buoyInfo}
         link={link} linkWord={linkWord} age={age} lastAt={lastAt}
         detections={detections} hoveredId={hoveredId} focus={focus}
+        buoys={buoys} tracks={tracks} hearing={hearing} status={status}
       />
       <DatabaseView
         active={view === "db"} now={now} detections={detections} archive={archive} onRetry={loadDb}

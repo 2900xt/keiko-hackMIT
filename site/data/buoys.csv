@@ -1,2 +1,2 @@
 buoy_id,name,latitude,longitude,hydrophone,sample_rate_hz,deployed_utc,status
-KEIKO-01,Stellwagen Bank in Massachusetts Bay,42.33000,-70.28000,piezo disc array,8000,2026-09-19T00:00:00Z,synthetic
+KEIKO-01,Boston Harbor at President Roads,42.34000,-70.97000,piezo disc array,8000,2026-09-19T00:00:00Z,synthetic

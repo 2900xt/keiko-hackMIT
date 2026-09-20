@@ -1,4 +1,4 @@
-import type { LiveDetection } from "./feed";
+import type { Fix, LiveDetection } from "./feed";
 
 export const DATA_BASE = "../data/"; // the GitHub database, relative to this page (the app lives at /app/)
 export const DAY = 86400000;
@@ -22,6 +22,9 @@ export interface Detection {
   source?: string;     // "field" | "synthetic" for archived rows
   spectrogram?: string;
   clip?: string;
+  species?: string;
+  fix?: Fix;           // live rows localized by the server
+  track_id?: string;
 }
 
 // A row of data/detections.json (see data/schema.json).
@@ -38,13 +41,13 @@ export function fromArchive(r: ArchiveRow): Detection {
   return {
     id: r.id, buoy_id: r.buoy_id, ts: r.timestamp_utc, t: Date.parse(r.timestamp_utc),
     lat: r.latitude, lon: r.longitude, confidence: r.confidence,
-    f0: r.peak_hz || 0, sweep: 0, duration_s: r.duration_s, live: false, source: r.source,
+    f0: r.peak_hz || 0, sweep: 0, duration_s: r.duration_s, live: false, source: r.source, species: r.species,
     spectrogram: DATA_BASE + r.spectrogram_path, clip: DATA_BASE + r.clip_path,
   };
 }
 
 export function fromLive(d: LiveDetection, buoyId: string, live: boolean): Detection {
-  return { ...d, buoy_id: buoyId, t: Date.parse(d.ts), live };
+  return { ...d, buoy_id: d.buoy_id ?? buoyId, t: Date.parse(d.ts), live };
 }
 
 export async function loadArchive(): Promise<Archive> {
