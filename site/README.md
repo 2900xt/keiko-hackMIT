@@ -16,10 +16,11 @@ npm run build    # static export to out/, data/ included
   - `LiveView.tsx` — map cell + buoy rail on top, sound strip below; `MapView.tsx` (Leaflet, client-only), `Waveform.tsx` (raw-signal oscilloscope + level bar, bottom left), `Spectrogram.tsx` (scrolling mel canvas, bottom right)
   - `DatabaseView.tsx` — summary tiles, `DetectionsChart.tsx` (14-day SVG bars), filter chips, sortable table of `DetectionRow.tsx` (time, location, confidence, spectrogram thumbnail, audio clip)
 - `lib/`
-  - `feed.ts` — synthetic feed: `telemetry` every 2 s, `audio` (spectrogram column) 20×/s, `detection` when a call ends; `feed.synthetic` is true, and the buoy rail says so (set it false in a real client)
+  - `feed.ts` — synthetic feed: `telemetry` every 2 s, `audio` 20×/s (a gapless 50 ms `pcm` chunk at 2 kHz, the 128 ms scope window, and the spectrogram column), `detection` when a call ends; `feed.synthetic` is true, and the buoy rail says so (set it false in a real client)
+  - `audio.ts` — `startLiveAudio(feed)`: streams the feed's `pcm` chunks through Web Audio (resampled to the device rate, low-passed at 950 Hz) behind the sound toggle in the spectrogram panel
   - `detections.ts` — detection types, archive + buoy loaders, time helpers
   - `dsp.ts` — magma colormap, mel scale, and the thumbnail / WAV a live row renders from its call parameters
-  - `hooks.ts` — `useFeedEvent`, `useNow`, `useAudioLevel`, `useElementSize`, `usePlayer`
+  - `hooks.ts` — `useFeedEvent`, `useNow`, `useAudioLevel`, `useLiveSound`, `useElementSize`, `usePlayer`
 - `public/data` — copy of `data/` made by `npm run dev` and `npm run build` (gitignored), so the dev server and the static export both serve the database
 - `data/` — the detection database: CSV + JSON, one WAV clip and one PNG spectrogram per detection
 - `tools/keiko_data.py` — add a detection from a WAV, rebuild the JSON, or generate synthetic rows

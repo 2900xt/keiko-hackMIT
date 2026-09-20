@@ -3,6 +3,7 @@ import dynamic from "next/dynamic";
 import type { Feed, Telemetry } from "@/lib/feed";
 import { ago, agoParts, RANGE_M, type BuoyInfo, type Detection } from "@/lib/detections";
 import Spectrogram from "./Spectrogram";
+import SoundToggle from "./SoundToggle";
 import Waveform from "./Waveform";
 import type { Link } from "./KeikoApp";
 
@@ -79,9 +80,12 @@ export default function LiveView({ feed, active, now, buoyId, position, telemetr
           <Waveform feed={feed} />
         </div>
         <div className="panel">
-          <div className="block-head">
+          <div className="block-head block-head-tools">
             <div className="eyebrow">Spectrogram</div>
-            <div className="eyebrow eyebrow-quiet">Mel scale · 0–1 kHz · last 30 s</div>
+            <div className="head-tools">
+              <span className="eyebrow eyebrow-quiet">Mel scale · 0–1 kHz · last 30 s</span>
+              <SoundToggle feed={feed} />
+            </div>
           </div>
           <Spectrogram feed={feed} />
         </div>
