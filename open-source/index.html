@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Keiko</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="top-left">
+      <div class="wordmark">Keiko</div>
+      <nav class="tabs">
+        <button class="tab on" data-view="live" type="button">Live</button>
+        <button class="tab" data-view="db" type="button">Database <span class="count" id="db-count">0</span></button>
+      </nav>
+    </div>
+    <div class="top-right">
+      <span class="live" id="live"><span class="live-dot"></span><span id="live-text">Connecting</span></span>
+      <span class="clock" id="clock">--:--:--</span>
+    </div>
+  </header>
+
+  <main class="grid view" id="view-live">
+    <section class="map-cell">
+      <div id="map"></div>
+    </section>
+
+    <aside class="side">
+      <section class="block">
+        <div class="eyebrow">Buoy</div>
+        <div class="buoy-id"><span id="s-id">—</span><span class="state" id="s-state">connecting</span></div>
+        <div class="eyebrow">Position</div>
+        <div class="pos"><span id="s-lat">—</span><span class="sep">,</span><span id="s-lon">—</span></div>
+        <div class="meta">Updated <span id="s-time">—</span></div>
+      </section>
+
+      <section class="block block-grow">
+        <div class="block-head">
+          <div class="eyebrow">Hydrophone</div>
+          <div class="eyebrow eyebrow-right">Mel spectrogram · last 30 s</div>
+        </div>
+        <div class="spec-wrap">
+          <div class="spec-y"><span>1 kHz</span><span>500</span><span>250</span><span>100</span><span>0</span></div>
+          <canvas id="spec" width="600" height="240"></canvas>
+        </div>
+        <div class="spec-x"><span>−30 s</span><span>−20 s</span><span>−10 s</span><span>now</span></div>
+        <div class="level">
+          <span class="eyebrow">Level</span>
+          <span class="level-bar"><i id="level-fill"></i></span>
+          <span class="level-val" id="level-val">— dB</span>
+        </div>
+      </section>
+    </aside>
+  </main>
+
+  <main class="db view hidden" id="view-db">
+    <div class="db-head">
+      <div>
+        <div class="eyebrow">Sightings</div>
+        <div class="db-title"><span id="db-total">0</span> whale detections</div>
+      </div>
+      <div class="db-links">
+        <span class="meta" id="db-meta">Loading archive…</span>
+        <a class="link" id="db-csv" href="data/detections.csv" download>Download CSV</a>
+        <a class="link" href="https://github.com/2900xt/keiko-hackMIT/tree/main/open-source/data" rel="noopener">Database on GitHub</a>
+      </div>
+    </div>
+    <table class="db-table">
+      <thead>
+        <tr><th>Time</th><th>Location</th><th>Confidence</th><th>Spectrogram</th><th>Audio</th></tr>
+      </thead>
+      <tbody id="db-rows"></tbody>
+    </table>
+    <p class="db-empty" id="db-empty">No detections yet.</p>
+  </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="synthetic.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
