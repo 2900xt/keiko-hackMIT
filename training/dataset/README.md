@@ -73,6 +73,35 @@ Caveats for training:
   20 "unidentified reef fish" call types are labeled by sound, not species.
 - Licenses differ per source (see `clips.license`). Watkins and Orcasound are non-commercial.
 
+## ML features (whales)
+
+`scripts/extract_whale_features.py` turns every whale clip into fixed-size log-mel spectrogram tensors:
+
+```bash
+python3 scripts/extract_whale_features.py        # ~1 min on 8 cores; needs librosa, soundfile, numpy; audio/ must exist
+```
+
+Output in `features/whales_32k_mel128_3s/`:
+- `windows.npy` — float16, shape (47,253, 128, 301): 3 s windows @ 32 kHz, 128 mel bins (10 Hz–16 kHz), n_fft 1024, hop 320,
+  log1p + per-window z-score. Short clips are centered and zero-padded; long clips are cut with 50% overlap, capped at 30 windows.
+  **Not in git (3.4 GB)** — regenerate with the command above.
+- `manifest.csv` (in git) — one row per window: clip_id, species, label, label_id, recording group, source, location, date,
+  **split**, offset. 24 classes = 23 species with ≥100 clips + `other_whale`.
+- `labels.json` (in git) — label→id, config, per-class counts per split.
+
+The split is by recording *group* (Watkins tape, Kaggle fold, Orcasound date, ReefSet site), stratified per class,
+so no session leaks between train/val/test (30,232 / 9,233 / 7,788 windows). Four species have too few tapes to split
+fairly (melon-headed whale, Clymene dolphin, Atlantic spotted dolphin, Fraser's dolphin); fold them into `other_whale`
+with `--min_clips 250` or don't evaluate on them. Use a weighted sampler and macro-F1.
+
+```python
+import numpy as np, pandas as pd
+X = np.load("features/whales_32k_mel128_3s/windows.npy", mmap_mode="r")
+m = pd.read_csv("features/whales_32k_mel128_3s/manifest.csv")
+tr = m.index[m.split == "train"].values
+x, y = X[tr[:256]].astype("float32")[:, None], m.label_id.values[tr[:256]]   # (256, 1, 128, 301)
+```
+
 ## Rebuild / extend
 
 ```bash
