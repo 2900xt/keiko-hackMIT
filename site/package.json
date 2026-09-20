@@ -3,8 +3,11 @@
   "private": true,
   "version": "0.1.0",
   "scripts": {
+    "sync-data": "rm -rf public/data && cp -R data public/data",
+    "predev": "npm run sync-data",
     "dev": "next dev",
-    "build": "next build && rm -rf out/data && cp -R data out/data",
+    "prebuild": "npm run sync-data",
+    "build": "next build",
     "start": "npx serve out",
     "typecheck": "tsc --noEmit"
   },

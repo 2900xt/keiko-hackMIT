@@ -2,7 +2,7 @@
 """
 Keiko detection database tool.
 
-The database is the open-source/data/ folder of this repo:
+The database is the site/data/ folder of this repo:
 
   data/detections.csv         one row per detection (the source of truth)
   data/detections.json        same rows, for the website

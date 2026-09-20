@@ -7,7 +7,7 @@ Next.js (App Router, TypeScript), exported as a static site. One buoy in the Cha
 ```sh
 npm install
 npm run dev      # http://localhost:3000
-npm run build    # static export to out/, with data/ copied in
+npm run build    # static export to out/, data/ included
 ```
 
 - `app/` — `layout.tsx` (metadata, favicon), `page.tsx`, `globals.css` (dark navy, blue accent, IBM Plex Sans + Mono via `next/font`)
@@ -20,7 +20,7 @@ npm run build    # static export to out/, with data/ copied in
   - `detections.ts` — detection types, archive + buoy loaders, time helpers
   - `dsp.ts` — magma colormap, mel scale, and the thumbnail / WAV a live row renders from its call parameters
   - `hooks.ts` — `useFeedEvent`, `useNow`, `useAudioLevel`, `useElementSize`, `usePlayer`
-- `public/data` — symlink to `../data` so the dev server serves the database; `npm run build` copies the real folder into `out/data`
+- `public/data` — copy of `data/` made by `npm run dev` and `npm run build` (gitignored), so the dev server and the static export both serve the database
 - `data/` — the detection database: CSV + JSON, one WAV clip and one PNG spectrogram per detection
 - `tools/keiko_data.py` — add a detection from a WAV, rebuild the JSON, or generate synthetic rows
 

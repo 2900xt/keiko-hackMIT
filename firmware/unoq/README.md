@@ -101,10 +101,10 @@ at ~0.5 on pure electrical noise, so keep `--min_conf` high and check `dc` is 1.
 believing a detection. To archive a detection on the website:
 
 ```bash
-../../open-source/tools/keiko_data.py add --wav recordings/<utc>.wav --buoy KEIKO-01 --time <utc> --lat 42.3572 --lon -71.0868 --confidence 0.87 --species "Eubalaena glacialis"
+../../site/tools/keiko_data.py add --wav recordings/<utc>.wav --buoy KEIKO-01 --time <utc> --lat 42.3572 --lon -71.0868 --confidence 0.87 --species "Eubalaena glacialis"
 ```
 
-then commit and push (`open-source/tools/requirements.txt` lists its deps; the whale_cnn venv already has them).
+then commit and push (`site/tools/requirements.txt` lists its deps; the whale_cnn venv already has them).
 
 Expect a line per second like:
 

@@ -12,7 +12,7 @@ python3 build_whale_locations.py --db ~/Projects/marine-sounds-db
 
 ## What was triaged
 
-`open-source/data/` (the Keiko detection database) was the first candidate and is **not used**:
+`site/data/` (the Keiko detection database) was the first candidate and is **not used**:
 all 24 rows carry `source = synthetic`, the generator (`tools/keiko_data.py synth`) draws each
 position uniformly within 450 m of a buoy in the Charles River, and the audio is a noise floor
 plus a sine sweep. There is no whale signal in it. Field rows (`source = field`) can be appended
@@ -20,7 +20,7 @@ to this table once the buoys record real detections.
 
 | source | verdict | why |
 |---|---|---|
-| Keiko `open-source/data` | dropped | 100 % synthetic, random positions in a river |
+| Keiko `site/data` | dropped | 100 % synthetic, random positions in a river |
 | Watkins (WHOI) | **kept**, 11,225 cuts, 214 recording-day events | species + date + position per recording, 1951–1999, worldwide |
 | DCLDE 2027 killer whale | **kept**, 34,423 calls, 5,537 minute events | per-call UTC at 23 fixed hydrophones in WA / BC / AK; ecotype labels |
 | AAD / IWC-SORP Antarctic blue & fin | **kept**, 77,080 calls, 42,777 minute events | per-call UTC at 10 Antarctic moorings, 2005–2017 |

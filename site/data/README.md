@@ -32,7 +32,7 @@ df <- read.csv("detections.csv")
 Or straight from GitHub without cloning:
 
 ```python
-base = "https://raw.githubusercontent.com/2900xt/keiko-hackMIT/main/open-source/data/"
+base = "https://raw.githubusercontent.com/2900xt/keiko-hackMIT/main/site/data/"
 df = pd.read_csv(base + "detections.csv")
 ```
 

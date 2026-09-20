@@ -1,11 +1,11 @@
-# Builds the Next.js site in open-source/ and publishes it (with data/) to GitHub Pages.
+# Builds the Next.js site in site/ and publishes it (with data/) to GitHub Pages.
 # enablement: true lets the workflow turn Pages on by itself (needs the default
 # GITHUB_TOKEN to be allowed to write; otherwise Settings → Pages → Source: GitHub Actions).
 name: Publish site and database
 on:
   push:
     branches: [main]
-    paths: ["open-source/**"]
+    paths: ["site/**"]
   workflow_dispatch:
 permissions:
   contents: read
@@ -22,7 +22,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     defaults:
       run:
-        working-directory: open-source
+        working-directory: site
     steps:
       - uses: actions/checkout@v4
       - id: pages
@@ -33,7 +33,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: open-source/package-lock.json
+          cache-dependency-path: site/package-lock.json
       - run: npm ci
       - run: npm run build
         env:
@@ -41,6 +41,6 @@ jobs:
           NEXT_TELEMETRY_DISABLED: 1
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: open-source/out
+          path: site/out
       - id: deployment
         uses: actions/deploy-pages@v4
