@@ -2,8 +2,8 @@
 import dynamic from "next/dynamic";
 import type { Feed, Telemetry } from "@/lib/feed";
 import { ago, agoParts, type BuoyInfo, type Detection } from "@/lib/detections";
-import { useAudioLevel } from "@/lib/hooks";
 import Spectrogram from "./Spectrogram";
+import Waveform from "./Waveform";
 import type { Link } from "./KeikoApp";
 
 // Leaflet touches window at import time, so the map only renders on the client.
@@ -61,22 +61,30 @@ export default function LiveView({ feed, active, now, buoyId, position, telemetr
           </div>
         </section>
 
-        <Stats feed={feed} now={now} detections={detections} />
+        <Stats now={now} detections={detections} />
+      </aside>
 
-        <section className="block block-grow">
+      <section className="sound" aria-label="Hydrophone audio">
+        <div className="panel">
           <div className="block-head">
-            <div className="eyebrow">Hydrophone</div>
-            <div className="eyebrow eyebrow-quiet">Mel spectrogram · 0–1 kHz · last 30 s</div>
+            <div className="eyebrow">Waveform</div>
+            <div className="eyebrow eyebrow-quiet">Raw signal · 2 kHz · last 128 ms</div>
+          </div>
+          <Waveform feed={feed} />
+        </div>
+        <div className="panel">
+          <div className="block-head">
+            <div className="eyebrow">Spectrogram</div>
+            <div className="eyebrow eyebrow-quiet">Mel · 0–1 kHz · last 30 s</div>
           </div>
           <Spectrogram feed={feed} />
-        </section>
-      </aside>
+        </div>
+      </section>
     </main>
   );
 }
 
-function Stats({ feed, now, detections }: { feed: Feed; now: number | null; detections: Detection[] }) {
-  const level = useAudioLevel(feed);
+function Stats({ now, detections }: { now: number | null; detections: Detection[] }) {
   const latest = detections.length ? Math.max(...detections.map((x) => x.t)) : 0;
   const last = now && latest ? agoParts(now - latest) : null;
   let today = 0;
@@ -84,8 +92,7 @@ function Stats({ feed, now, detections }: { feed: Feed; now: number | null; dete
   return (
     <section className="block stats" aria-label="Summary">
       <div className="stat"><div className="eyebrow">Today</div><div className="num">{today}</div><div className="unit">detections</div></div>
-      <div className="stat"><div className="eyebrow">Last call</div><div className="num">{last ? last[0] : "—"}</div><div className="unit">{last ? last[1] : " "}</div></div>
-      <div className="stat"><div className="eyebrow">Level</div><div className="num">{level === null ? "—" : level.toFixed(0)}</div><div className="unit">dB re 1 µPa</div></div>
+      <div className="stat"><div className="eyebrow">Last call</div><div className="num">{last ? last[0] : "—"}</div><div className="unit">{last ? last[1] : " "}</div></div>
     </section>
   );
 }

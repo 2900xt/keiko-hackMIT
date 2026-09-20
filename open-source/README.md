@@ -10,10 +10,10 @@ npm run dev      # http://localhost:3000
 npm run build    # static export to out/, with data/ copied in
 ```
 
-- `app/` — `layout.tsx` (metadata, favicon), `page.tsx`, `globals.css` (white, Helvetica)
+- `app/` — `layout.tsx` (metadata, favicon), `page.tsx`, `globals.css` (dark navy, blue accent, IBM Plex Sans + Mono via `next/font`)
 - `components/`
   - `KeikoApp.tsx` — owns the feed, the detection list, the `#live` / `#db` hash route, and table state
-  - `LiveView.tsx` — map cell + buoy rail; `MapView.tsx` (Leaflet, client-only), `Spectrogram.tsx` (scrolling mel canvas + level bar)
+  - `LiveView.tsx` — map cell + buoy rail on top, sound strip below; `MapView.tsx` (Leaflet, client-only), `Waveform.tsx` (raw-signal oscilloscope + level bar, bottom left), `Spectrogram.tsx` (scrolling mel canvas, bottom right)
   - `DatabaseView.tsx` — summary tiles, `DetectionsChart.tsx` (14-day SVG bars), filter chips, sortable table of `DetectionRow.tsx` (time, location, confidence, spectrogram thumbnail, audio clip)
 - `lib/`
   - `feed.ts` — synthetic feed: `telemetry` every 2 s, `audio` (spectrogram column) 20×/s, `detection` when a call ends
