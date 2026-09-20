@@ -27,7 +27,7 @@ to this table once the buoys record real detections.
 | DCLDE DFO sites (WVanIsl, NorthBc, WDLP) | dropped, 148,820 calls | hydrophone positions unpublished (paper says so) |
 | Watkins captive recordings | dropped, 1,595 cuts | aquarium / tank / zoo, no wild position |
 | Watkins seals, sea otter, undated, unpositioned | dropped, 2,428 cuts | not a cetacean, or nothing to place on a map |
-| Cornell right-whale challenge | dropped | no per-clip date or position |
+| Cornell / Kaggle right-whale challenge (`whale-detection-challenge.zip`) | dropped here, **kept in `../whale-clips`** | clips are named `train1.aiff`… and the AIFF headers carry no timestamp, so there is no per-clip time or position to place on a map; the audio and labels are still the best right-whale detector data and go into the clip bundle |
 | BEANS HICEAS minke | dropped | towed array on a moving ship, no track in the data |
 | Orcasound Pod.Cast | dropped | duplicate of the DCLDE `orcasound_lab` annotations |
 | ReefSet, ToadFishFinder, Zenodo fish | dropped | not whales |

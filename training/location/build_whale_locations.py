@@ -155,12 +155,13 @@ def minute_floor(ts: pd.Series) -> pd.Series:
 # ----------------------------------------------------------------------------- sources
 
 
-def load_watkins(db_root: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
+def watkins_clips(db_root: Path) -> pd.DataFrame:
+    """Cleaned clip-level Watkins table: cetaceans, wild, dated, positioned. Shared with build_whale_clips.py."""
     con = sqlite3.connect(db_root / "marine_sounds.sqlite")
     df = pd.read_sql(
         """
         SELECT c.clip_id, c.source_record_id, s.scientific_name, s.common_name, s.taxon_group,
-               c.sound_type, c.observation_date, c.location, c.lat, c.lon, c.note
+               c.sound_type, c.observation_date, c.location, c.lat, c.lon, c.note, c.file_path, c.sample_rate, c.duration_s
         FROM clips c JOIN datasets d USING (dataset_id) LEFT JOIN species s USING (species_id)
         WHERE d.name LIKE 'Watkins%'
         """,
@@ -209,7 +210,11 @@ def load_watkins(db_root: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
     note("watkins", "dropped: position out of range", m.sum())
     df = df[~m]
     note("watkins", "clips kept", len(df))
+    return df
 
+
+def load_watkins(db_root: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
+    df = watkins_clips(db_root)
     # One event per species x day x position. Many cuts come from the same tape.
     df["day"] = df.date.dt.floor("D")
     g = (

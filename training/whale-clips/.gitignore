@@ -1,0 +1,3 @@
+# audio lives on disk next to marine-sounds-db, rebuild with build_whale_clips.py
+train/
+train.csv
