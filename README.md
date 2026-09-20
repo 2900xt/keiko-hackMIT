@@ -37,11 +37,15 @@ cd firmware/esp32-s3 && make flash && make start      # ESP32-S3 on USB: flash t
 ```
 
 ```bash
+cd firmware/nrf7002 && make flash && make monitor      # nRF7002 DK on J-Link USB: flash the node, watch the health line
+```
+
+```bash
 cd pipeline && make live                               # node -> this laptop over Wi-Fi -> whale CNN -> events
 ```
 
 `make live ARGS="--archive"` writes detections into `site/data/`, which the website reads. Details in
-`pipeline/README.md`, `firmware/unoq/README.md` and `firmware/esp32-s3/README.md`.
+`pipeline/README.md`, `firmware/unoq/README.md`, `firmware/esp32-s3/README.md` and `firmware/nrf7002/README.md`.
 
 ## Team
 

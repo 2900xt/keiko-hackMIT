@@ -1,0 +1,15 @@
+{
+  "_comment": "args for ../whale_cnn/train.py on the Voloridge GPU. Laptop default is width 32 / batch 128 / 12 epochs.",
+  "features": "../dataset/features/v2_32k_mel128_3s",
+  "name": "volo_w64",
+  "epochs": 40,
+  "batch": 256,
+  "lr": 2e-3,
+  "width": 64,
+  "steps_per_epoch": 400,
+  "dropout": 0.5,
+  "mixup": 0.2,
+  "patience": 8,
+  "seed": 0,
+  "export": "models/whale_cnn_volo"
+}

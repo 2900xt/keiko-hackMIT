@@ -1,0 +1,14 @@
+{
+  "_comment": "args for train/finetune.py. init = pretrained checkpoint (runs/<name>/best.pt or models/*.pt).",
+  "init": "../whale_cnn/models/whale_cnn_volo.pt",
+  "features": "data/charles_v2",
+  "name": "charles_ft",
+  "freeze_blocks": 2,
+  "epochs": 30,
+  "batch": 64,
+  "lr": 5e-4,
+  "head_lr_mult": 10.0,
+  "patience": 6,
+  "seed": 0,
+  "export": "models/whale_cnn_charles"
+}

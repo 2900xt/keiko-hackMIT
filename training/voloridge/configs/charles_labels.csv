@@ -1,0 +1,8 @@
+# Label vocabulary for the Charles / Boston Harbor recordings. `hierarchy` feeds the same abstain rule the pipeline uses.
+label,hierarchy,description
+motorboat,no_whale,outboard or inboard engine; prop cavitation
+crew_shell,no_whale,oar strokes and hull slap; MIT / BU boathouses
+ambient_quiet,no_whale,nothing but water and the recorder
+rain,no_whale,surface rain on the water
+whale,baleen,anything the pretrained model flags as a whale class (kept so the head can still say it)
+unknown,no_whale,not sure; goes to the anomaly bucket downstream
