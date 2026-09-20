@@ -49,5 +49,10 @@ for info in z.infolist():
 os.remove("sounds.zip")
 PY
 
-# 6. Build
+# 6. Cornell/Marinexplore right whale upcall challenge (Kaggle 2013) via the timeseriesclassification.com mirror (260 MB, no login)
+mkdir -p raw/right_whale_calls
+aria2c -d raw/right_whale_calls -o RightWhaleCalls.zip -x 8 -s 8 -c --file-allocation=none "https://www.timeseriesclassification.com/aeon-toolkit/RightWhaleCalls.zip"
+(cd raw/right_whale_calls && unzip -qo RightWhaleCalls.zip)
+
+# 7. Build
 python3 scripts/build_db.py

@@ -1,5 +1,6 @@
 species_id,scientific_name,common_name,taxon_group,n_clips,minutes,n_datasets,n_sound_types
 1,Opsanus tau,Oyster toadfish,fish,10018,225.4,1,2
+52,Eubalaena glacialis,North Atlantic right whale,baleen whale,6883,229.6,2,2
 3,Porichthys notatus,Plainfin midshipman,fish,4660,149.1,1,1
 65,Orcinus orca,Killer whale,toothed whale,3533,128.9,2,4
 54,Megaptera novaeangliae,Humpback whale,baleen whale,3105,199.1,2,2
@@ -14,7 +15,6 @@ species_id,scientific_name,common_name,taxon_group,n_clips,minutes,n_datasets,n_
 106,Lagenorhynchus acutus,Atlantic white-sided dolphin,toothed whale,560,27.0,1,0
 104,Pseudorca crassidens,False killer whale,toothed whale,508,16.2,1,0
 75,Stenella longirostris,Spinner dolphin,toothed whale,492,38.8,1,1
-52,Eubalaena glacialis,North Atlantic right whale,baleen whale,435,14.6,1,2
 63,Balaena mysticetus,Bowhead whale,baleen whale,404,52.1,1,1
 77,Grampus griseus,Risso's dolphin,toothed whale,359,8.2,1,1
 123,Stenella clymene,Clymene dolphin,toothed whale,328,18.2,1,0

@@ -483,6 +483,42 @@ class Builder:
                 n += 1
         self.con.commit(); print(f"Orcasound: {n} labeled call clips")
 
+
+    # ------------------------------------------------------------------ Cornell/Marinexplore Whale Detection Challenge (Kaggle 2013) via the
+    # timeseriesclassification.com "RightWhaleCalls" mirror: 2-s clips @ 2 kHz, label 1 = North Atlantic right whale upcall, 0 = noise
+    def load_right_whale(self):
+        base = RAW / "right_whale_calls"
+        files = [(base / "RightWhaleCalls_TRAIN.ts", "train"), (base / "RightWhaleCalls_TEST.ts", "test")]
+        if not any(f.exists() for f, _ in files): return
+        import numpy as np
+        did = self.dataset("Marinexplore/Cornell Whale Detection Challenge (Kaggle 2013)", downloaded=1, local_path="audio/right_whale_calls",
+                           url="https://www.kaggle.com/competitions/whale-detection-challenge/data (mirror: https://www.timeseriesclassification.com/description.php?Dataset=RightWhaleCalls)")
+        sid = self.species("Eubalaena glacialis", common="North Atlantic right whale", group="baleen whale")
+        out = AUDIO / "right_whale_calls"; n = 0
+        for f, split in files:
+            if not f.exists(): continue
+            i = 0
+            for line in open(f):
+                if line.startswith(("#", "@")) or not line.strip(): continue
+                vals, lab = line.rsplit(":", 1); lab = lab.strip(); i += 1
+                is_call = lab == "1"
+                folder = out / ("upcall" if is_call else "noise"); folder.mkdir(parents=True, exist_ok=True)
+                dst = folder / f"rwc_{split}_{i:05d}.wav"
+                if not dst.exists():
+                    a = np.array(vals.split(","), dtype=np.float64)
+                    if np.abs(a).max() <= 1.0:           # mirror stores float samples in [-1, 1]; fixed global scale keeps relative loudness
+                        a = np.clip(a * 32768.0, -32768, 32767)
+                    sf.write(str(dst), a.astype(np.int16), 2000, subtype="PCM_16")
+                sr, dur, ch = wav_info(dst)
+                self.clip(dataset_id=did, species_id=sid if is_call else None,
+                          taxon_label="North Atlantic right whale" if is_call else "noise (no right whale; ambient/ship/anthropogenic)",
+                          sound_type="upcall" if is_call else "noise", file_path=str(dst.relative_to(ROOT)), sample_rate=sr, duration_s=dur, channels=ch,
+                          source_record_id=f"{split}:{i}", location="Massachusetts Bay / Cape Cod (Cornell MARU buoys)",
+                          note=f"Kaggle whale-detection-challenge {split} split via timeseriesclassification.com mirror; label={lab}",
+                          license="Kaggle competition rules (research use)", source_url="https://www.kaggle.com/competitions/whale-detection-challenge")
+                n += 1
+        self.con.commit(); print(f"RightWhaleCalls: {n} clips")
+
     # ------------------------------------------------------------------ exports
     def export(self):
         for name, q in [("species", "SELECT * FROM v_species_summary"), ("clips", "SELECT * FROM v_clips"),
@@ -501,6 +537,7 @@ if __name__ == "__main__":
     b.load_zenodo()
     b.load_toadfish()
     b.load_orcasound()
+    b.load_right_whale()
     b.export()
     for row in b.con.execute("SELECT s.taxon_group, COUNT(DISTINCT c.species_id), COUNT(*) FROM clips c LEFT JOIN species s USING(species_id) GROUP BY s.taxon_group"):
         print(row)
