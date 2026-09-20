@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { Feed, FeedEvents, FeedHandler } from "./feed";
+import { startLiveAudio, type LiveAudio } from "./audio";
 
 // Subscribe to one feed event for the life of the component. The handler is
 // read through a ref so callers can pass a fresh closure every render.
@@ -73,4 +74,25 @@ export function usePlayer() {
     a.play().then(() => setPlaying(src), () => { setPlaying(null); setFailed(src); });
   }
   return { playing, failed, toggle };
+}
+
+// Live hydrophone audio on/off. Starting must happen inside the click (the
+// browser's autoplay rule), so the audio graph is built in `toggle`, not in an
+// effect; it is torn down on unmount. `supported` is false where Web Audio is
+// missing, so the button can hide itself.
+export function useLiveSound(feed: Feed) {
+  const live = useRef<LiveAudio | null>(null);
+  const [on, setOn] = useState(false);
+  const [supported, setSupported] = useState(true);
+  useEffect(() => {
+    setSupported("AudioContext" in window || "webkitAudioContext" in window);
+    return () => { live.current?.stop(); live.current = null; };
+  }, []);
+  function toggle() {
+    if (live.current) { live.current.stop(); live.current = null; setOn(false); return; }
+    const a = startLiveAudio(feed);
+    if (!a) { setSupported(false); return; }
+    live.current = a; setOn(true);
+  }
+  return { on, supported, toggle };
 }
