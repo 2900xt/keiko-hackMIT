@@ -15,7 +15,7 @@ whale-detection-challenge.zip ──features.py──▶ ../dataset/features/mob
 ```bash
 pip install torch numpy librosa soundfile scikit-learn onnx
 python3 features.py      # ~5 min on 8 cores: 11 librosa features per clip (poster Figure 6)
-python3 train.py         # 5-fold ensemble, ~15 min on an M-series GPU
+python3 train.py         # 2-fold ensemble, ~8 min on an M-series GPU (--folds 5 --epochs 20 for the full poster setup)
 python3 predict.py some_hydrophone_recording.wav
 ```
 
@@ -30,14 +30,26 @@ python3 predict.py some_hydrophone_recording.wav
 - Head: concat 384 → 256 → 64 → 2, softmax
 - **Ensemble** = mean softmax of the K fold models (`Ensemble` in `train.py`; that is what `models/moby_narw.pt` holds).
 
-**Training**: 15% of clips are held out as the test set (stratified, seed 0). The other 85% is split into 5 stratified folds;
-each fold model trains on 4 folds with AdamW + one-cycle LR, class-weighted cross-entropy (sqrt inverse frequency) with
+**Training**: 15% of clips are held out as the test set (stratified, seed 0). The other 85% is split into K stratified folds (default 2 for speed; `--folds 5` reproduces the poster);
+each fold model trains on the other folds with AdamW + one-cycle LR, class-weighted cross-entropy (sqrt inverse frequency) with
 label smoothing, and early-stops on its own fold's AUROC. Augmentation on the GPU batch, train only: Gaussian blur on the
 2D stack (p = 0.5), time dilation 0.85-1.15x applied to both branches together, additive gain jitter, one time mask.
 
 ## Results
 
-RESULTS_PLACEHOLDER
+`python3 train.py` (2 folds, 12 epochs, patience 3, seed 0), held-out test = 4,500 clips (1,054 upcalls). Threshold 0.5 for acc / F1.
+
+| | val AUROC | test AUROC | test acc | test F1 |
+|---|---|---|---|---|
+| fold 0 model | 0.9690 | 0.9733 | 0.924 | 0.843 |
+| fold 1 model | 0.9670 | 0.9741 | 0.914 | 0.832 |
+| **ensemble (mean softmax)** | – | **0.9766** | 0.923 | 0.846 |
+
+Poster (5-fold, TensorFlow): AUROC 0.977 ± 0.002 with 343,877 parameters; Cornell baseline 0.72. This port lands in the same
+place (357,725 parameters per model). A 5-fold / 20-epoch run of fold 0 alone reached 0.979 test AUROC, so
+`--folds 5 --epochs 20` buys a few tenths of a point for ~3x the training time.
+
+Sanity check on raw clips: `python3 predict.py train6.aiff train7.aiff train1.aiff train2.aiff` → 0.68, 0.93 (upcalls) vs 0.10, 0.06 (noise).
 
 ## Files
 
@@ -46,7 +58,7 @@ RESULTS_PLACEHOLDER
 | `features.py` | Kaggle zip → `moby_narw.npz` (`X2` (N,103,126), `X1` (N,7,126), `y`); `clip_features(audio)` is reused by `predict.py` |
 | `train.py` | model (`Moby`, `CBAM`, `Ensemble`), K-fold training, evaluation, export; `load_ensemble(path)` |
 | `predict.py` | slide 2 s windows over any audio file, print P(whale) per window |
-| `models/moby_narw.pt` | the 5 fold models + normalization stats + feature spec + report |
+| `models/moby_narw.pt` | the fold models + normalization stats + feature spec + report |
 | `models/moby_narw.json` | per-fold and ensemble metrics, test indices, config |
 | `models/moby_narw.onnx` | the ensemble as one graph: inputs `x2d` (B,103,126), `x1d` (B,7,126) → `p_whale` (B,) |
 

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Moby: two-branch ensemble right-whale detector (ISEF poster, Figure 8), PyTorch.
 
-    python3 train.py                        # 5-fold ensemble on ../dataset/features/moby_narw.npz, ~15 min on an M-series GPU
-    python3 train.py --folds 1 --epochs 5   # one quick model
+    python3 train.py                        # 2-fold ensemble on ../dataset/features/moby_narw.npz, ~8 min on an M-series GPU
+    python3 train.py --folds 5 --epochs 20  # the full poster setup, ~25 min
     python3 train.py --eval models/moby_narw.pt
 
 Architecture (per fold model, ~350k parameters):
@@ -119,15 +119,17 @@ def batches(X2, X1, y, idx, bs, shuffle):
 
 @torch.no_grad()
 def probs(model, X2, X1, y, idx, dev, bs=512):
+    """P(whale) for the clips in idx, returned in np.sort(idx) order (batches() sorts each batch)."""
     model.eval(); out = []
-    for x2, x1, _ in batches(X2, X1, y, idx, bs, False):
+    for x2, x1, _ in batches(X2, X1, y, np.sort(idx), bs, False):
         p = model(x2.to(dev), x1.to(dev))
         out.append((F.softmax(p, 1)[:, 1] if p.ndim == 2 else p).cpu())
     return torch.cat(out).numpy()
 
 
-def metrics(y, p):
-    return {"auroc": float(roc_auc_score(y, p)), "acc": float(accuracy_score(y, p > 0.5)), "f1": float(f1_score(y, p > 0.5))}
+def evaluate(model, X2, X1, y, idx, dev):
+    p = probs(model, X2, X1, y, idx, dev); yt = y[np.sort(idx)]
+    return {"auroc": float(roc_auc_score(yt, p)), "acc": float(accuracy_score(yt, p > 0.5)), "f1": float(f1_score(yt, p > 0.5))}
 
 
 def stats(X, idx):
@@ -153,7 +155,7 @@ def train_fold(X2, X1, y, tr, va, a, dev, fold):
             loss = F.cross_entropy(model(x2, x1), yb, weight=w, label_smoothing=0.05)
             opt.zero_grad(set_to_none=True); loss.backward(); nn.utils.clip_grad_norm_(model.parameters(), 5.0); opt.step(); sched.step()
             tot += loss.item() * len(yb)
-        m = metrics(y[va], probs(model, X2, X1, y, va, dev))
+        m = evaluate(model, X2, X1, y, va, dev)
         print(f"  fold {fold} ep {ep + 1:2d}/{a.epochs}  loss {tot / len(tr):.4f}  val auroc {m['auroc']:.4f} acc {m['acc']:.3f} f1 {m['f1']:.3f}  {time.time() - t0:.0f}s")
         if m["auroc"] > best:
             best, bad, best_state = m["auroc"], 0, {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
@@ -167,9 +169,9 @@ def train_fold(X2, X1, y, tr, va, a, dev, fold):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--features", type=pathlib.Path, default=DEFAULT_FEATURES)
-    ap.add_argument("--folds", type=int, default=5)
-    ap.add_argument("--epochs", type=int, default=20)
-    ap.add_argument("--patience", type=int, default=5)
+    ap.add_argument("--folds", type=int, default=2)
+    ap.add_argument("--epochs", type=int, default=12)
+    ap.add_argument("--patience", type=int, default=3)
     ap.add_argument("--batch", type=int, default=128)
     ap.add_argument("--lr", type=float, default=2e-3)
     ap.add_argument("--lstm", type=int, default=64)
@@ -186,7 +188,7 @@ def main():
 
     if a.eval:
         ens = load_ensemble(a.eval).to(dev)
-        print("test (ensemble):", metrics(y[te], probs(ens, X2, X1, y, te, dev))); return
+        print("test (ensemble):", evaluate(ens, X2, X1, y, te, dev)); return
 
     models, fold_val, fold_test = [], [], []
     if a.folds > 1:
@@ -198,11 +200,11 @@ def main():
     n_params = sum(p.numel() for p in Moby(X2.shape[1], X1.shape[1], a.lstm).parameters()); print(f"parameters per model: {n_params:,}")
     for k, (tr, va) in enumerate(splits):
         model, best = train_fold(X2, X1, y, tr, va, a, dev, k)
-        mt = metrics(y[te], probs(model, X2, X1, y, te, dev))
+        mt = evaluate(model, X2, X1, y, te, dev)
         print(f"fold {k}: best val auroc {best:.4f}   test auroc {mt['auroc']:.4f} acc {mt['acc']:.3f} f1 {mt['f1']:.3f}")
         models.append(model); fold_val.append(best); fold_test.append(mt)
     ens = Ensemble(models).to(dev)
-    me = metrics(y[te], probs(ens, X2, X1, y, te, dev))
+    me = evaluate(ens, X2, X1, y, te, dev)
     ta = np.array([m["auroc"] for m in fold_test])
     print(f"\nsingle model test AUROC {ta.mean():.4f} +/- {ta.std():.4f}   ENSEMBLE test AUROC {me['auroc']:.4f} acc {me['acc']:.3f} f1 {me['f1']:.3f}")
 
