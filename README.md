@@ -35,7 +35,7 @@ cd firmware/unoq && make start && make logs            # UNO Q on USB-C: flash t
 cd pipeline && make live                               # node -> this laptop over Wi-Fi -> whale CNN -> events
 ```
 
-`make live ARGS="--archive"` writes detections into `open-source/data/`, which the website reads. Details in
+`make live ARGS="--archive"` writes detections into `site/data/`, which the website reads. Details in
 `pipeline/README.md` and `firmware/unoq/README.md`.
 
 ## Team

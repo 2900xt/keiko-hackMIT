@@ -5,7 +5,7 @@ Turns a hydrophone node's UDP stream into whale detections on the website, in on
 ```
 node UDP (KEIK packets) ─► 3 s windows, 50% overlap ─► whale CNN v2 ─► event (run of whale windows)
                                                                           ├─► out/<id>.wav + out/events.jsonl
-                                                                          └─► --archive: open-source/data via keiko_data.py add
+                                                                          └─► --archive: site/data via keiko_data.py add
 ```
 
 | | |
@@ -41,7 +41,7 @@ make demo                         # ctrl-c stops it
 `demo.sh` loops the humpback sample through `replay_wav.py` as if a node were streaming it, and runs the pipeline on
 it with `--min_conf 0.6`. Expect a `WHALE Megaptera_novaeangliae` line every 1.5 s during song and an `EVENT …
 humpback whale` line when each bout ends. `make demo ARGS="--archive --source synthetic"` also writes the events into
-`open-source/data/` so the website's Database tab shows them (revert or commit that folder afterwards).
+`site/data/` so the website's Database tab shows them (revert or commit that folder afterwards).
 
 The sample is a National Park Service recording from the Glacier Bay hydrophone (public domain, via
 [archive.org](https://archive.org/details/HumpbackWhalesSongsSoundsVocalizations)). Any WAV/FLAC/MP3 works:
@@ -79,7 +79,7 @@ Offline over a recording (`make record` in `firmware/unoq` makes one):
 
 What the output means: one line per window (`WHALE` marks windows that pass the abstain rule), then `EVENT …` when a
 run of whale windows ends. Events always land in `pipeline/out/` (gitignored) as a clip WAV plus a line in
-`events.jsonl`; with `--archive` they also go through `open-source/tools/keiko_data.py add` (clip, spectrogram,
+`events.jsonl`; with `--archive` they also go through `site/tools/keiko_data.py add` (clip, spectrogram,
 CSV + JSON row) — commit that folder and the site shows them.
 
 ## Knobs
@@ -89,7 +89,7 @@ CSV + JSON row) — commit that folder and the site shows them.
   defaults are stricter. Lower them for a demo with real calls.
 - `--min_windows 2` consecutive whale windows to open an event, `--patience 2` no-whale windows to close it,
   `--max_s 30` hard cap. Clip = event ± 0.5 s at the node's own sample rate.
-- `--buoy KEIKO-01` looks up position in `open-source/data/buoys.csv`; `--lat/--lon` override.
+- `--buoy KEIKO-01` looks up position in `site/data/buoys.csv`; `--lat/--lon` override.
 - `--hop 1.5` seconds between classifications (~15 ms of CPU per window on an M-series Mac; the model is small).
 
 ## Caveats
