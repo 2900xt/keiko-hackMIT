@@ -10,7 +10,7 @@ npm run dev      # http://localhost:3000 (landing) · http://localhost:3000/app/
 npm run build    # static export to out/, data/ included
 ```
 
-- `app/` — `layout.tsx` (metadata, favicon), `page.tsx` (landing), `app/page.tsx` (the app, at `/app/`), `globals.css` (dark navy, blue accent, IBM Plex Sans + Mono via `next/font`)
+- `app/` — `layout.tsx` (metadata, whale favicon, fonts — IBM Plex for the app, Geist for the landing), `page.tsx` (landing), `app/page.tsx` (the app, at `/app/`), `globals.css` (dark navy, blue accent, IBM Plex Sans + Mono via `next/font`)
 - `components/`
   - `Landing.tsx` — landing page: one hero, a statline, links to the app and the repo
   - `KeikoApp.tsx` — owns the feed, the detection list, the `#live` / `#db` hash route, and table state

@@ -9,11 +9,7 @@ export default function Header({ view, count, link, linkWord, now }: Props) {
     <header className="top">
       <div className="top-left">
         <a className="wordmark" href="../" aria-label="Keiko home">
-          <svg className="mark" viewBox="0 0 32 32" aria-hidden="true">
-            <circle cx="16" cy="16" r="4" />
-            <circle cx="16" cy="16" r="9" fill="none" stroke="currentColor" strokeWidth="2" opacity=".45" />
-            <circle cx="16" cy="16" r="14" fill="none" stroke="currentColor" strokeWidth="2" opacity=".18" />
-          </svg>
+          <span className="mark" aria-hidden="true">🐋</span>
           Keiko
         </a>
         <nav className="tabs" aria-label="Sections">

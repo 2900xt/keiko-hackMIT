@@ -13,11 +13,7 @@ export default function Landing() {
       </svg>
       <div className="hero">
         <a className="wordmark" href="./" aria-label="Keiko home">
-          <svg className="mark" viewBox="0 0 32 32" aria-hidden="true">
-            <circle cx="16" cy="16" r="4" />
-            <circle cx="16" cy="16" r="9" fill="none" stroke="currentColor" strokeWidth="2" opacity=".45" />
-            <circle cx="16" cy="16" r="14" fill="none" stroke="currentColor" strokeWidth="2" opacity=".18" />
-          </svg>
+          <span className="mark" aria-hidden="true">🐋</span>
           Keiko
         </a>
         <h1 className="hero-title">Low-cost acoustic buoys for monitoring whales in the waters you protect.</h1>
