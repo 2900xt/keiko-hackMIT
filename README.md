@@ -33,11 +33,15 @@ cd firmware/unoq && make start && make logs            # UNO Q on USB-C: flash t
 ```
 
 ```bash
+cd firmware/nrf7002 && make flash && make monitor      # nRF7002 DK on J-Link USB: flash the node, watch the health line
+```
+
+```bash
 cd pipeline && make live                               # node -> this laptop over Wi-Fi -> whale CNN -> events
 ```
 
 `make live ARGS="--archive"` writes detections into `site/data/`, which the website reads. Details in
-`pipeline/README.md` and `firmware/unoq/README.md`.
+`pipeline/README.md`, `firmware/unoq/README.md` and `firmware/nrf7002/README.md`.
 
 ## Team
 
