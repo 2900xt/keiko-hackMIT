@@ -1,0 +1,6 @@
+name: Keiko hydrophone node
+description: "Piezo hydrophone capture on the UNO Q MCU, forwarded to the Keiko pipeline over UDP"
+icon: 🐋
+version: "0.1.0"
+ports: []
+bricks: []

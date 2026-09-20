@@ -14,6 +14,7 @@ hydrophone B ──> ESP32-S3 DevKitC ┘     detector → classifier → embedd
 
 - `firmware/esp32-s3/` — hydrophone B: I2S/ADC capture → UDP stream
 - `firmware/nrf7002/` — hydrophone A: SAADC capture → UDP stream (Zephyr / nRF Connect SDK)
+- `firmware/unoq/` — hydrophone C: UNO Q's own MCU samples a piezo → Bridge → UDP (see its README for the analog front end)
 - `pipeline/` — Python: UDP receiver, detector, classifier, embeddings, TDOA, Elasticsearch ingest
 - `elastic/` — index mappings, Kibana saved objects, ES|QL queries, agent
 - `training/` — dataset prep + model training scripts

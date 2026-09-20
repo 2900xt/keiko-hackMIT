@@ -1,0 +1,176 @@
+{
+ "config": {
+  "name": "whales_32k_mel128_3s",
+  "sr": 32000,
+  "win_s": 3.0,
+  "n_fft": 1024,
+  "hop": 320,
+  "n_mels": 128,
+  "fmin": 10.0,
+  "fmax": 16000.0,
+  "min_clips": 100,
+  "max_win": 30,
+  "workers": 8,
+  "limit": 0
+ },
+ "n_windows": 47253,
+ "n_clips": 25385,
+ "failed_clips": 0,
+ "shape": [
+  47253,
+  128,
+  301
+ ],
+ "label_id": {
+  "Balaena_mysticetus": 0,
+  "Balaenoptera_acutorostrata": 1,
+  "Balaenoptera_physalus": 2,
+  "Delphinapterus_leucas": 3,
+  "Delphinus_delphis": 4,
+  "Eubalaena_glacialis": 5,
+  "Globicephala_macrorhynchus": 6,
+  "Globicephala_melas": 7,
+  "Grampus_griseus": 8,
+  "Lagenodelphis_hosei": 9,
+  "Lagenorhynchus_acutus": 10,
+  "Lagenorhynchus_albirostris": 11,
+  "Megaptera_novaeangliae": 12,
+  "Orcinus_orca": 13,
+  "Peponocephala_electra": 14,
+  "Physeter_macrocephalus": 15,
+  "Pseudorca_crassidens": 16,
+  "Stenella_attenuata": 17,
+  "Stenella_clymene": 18,
+  "Stenella_coeruleoalba": 19,
+  "Stenella_frontalis": 20,
+  "Stenella_longirostris": 21,
+  "Tursiops_truncatus": 22,
+  "other_whale": 23
+ },
+ "windows_per_label_per_split": {
+  "Balaena_mysticetus": {
+   "train": 451,
+   "val": 283,
+   "test": 181
+  },
+  "Balaenoptera_acutorostrata": {
+   "train": 3977,
+   "test": 1012,
+   "val": 1239
+  },
+  "Balaenoptera_physalus": {
+   "train": 3219,
+   "test": 691,
+   "val": 689
+  },
+  "Delphinapterus_leucas": {
+   "test": 28,
+   "train": 113,
+   "val": 28
+  },
+  "Delphinus_delphis": {
+   "train": 622,
+   "test": 201,
+   "val": 321
+  },
+  "Eubalaena_glacialis": {
+   "train": 4655,
+   "test": 1406,
+   "val": 1406
+  },
+  "Globicephala_macrorhynchus": {
+   "test": 164,
+   "train": 594,
+   "val": 342
+  },
+  "Globicephala_melas": {
+   "train": 1030,
+   "test": 245,
+   "val": 264
+  },
+  "Grampus_griseus": {
+   "train": 221,
+   "val": 124,
+   "test": 75
+  },
+  "Lagenodelphis_hosei": {
+   "train": 60,
+   "val": 186,
+   "test": 183
+  },
+  "Lagenorhynchus_acutus": {
+   "val": 148,
+   "train": 497,
+   "test": 127
+  },
+  "Lagenorhynchus_albirostris": {
+   "train": 137,
+   "test": 29,
+   "val": 45
+  },
+  "Megaptera_novaeangliae": {
+   "train": 3087,
+   "val": 731,
+   "test": 757
+  },
+  "Orcinus_orca": {
+   "val": 601,
+   "test": 600,
+   "train": 2794
+  },
+  "Peponocephala_electra": {
+   "train": 218,
+   "val": 3
+  },
+  "Physeter_macrocephalus": {
+   "train": 5769,
+   "test": 1239,
+   "val": 1238
+  },
+  "Pseudorca_crassidens": {
+   "val": 206,
+   "train": 273,
+   "test": 100
+  },
+  "Stenella_attenuata": {
+   "val": 399,
+   "test": 356,
+   "train": 616
+  },
+  "Stenella_clymene": {
+   "val": 198,
+   "test": 2,
+   "train": 200
+  },
+  "Stenella_coeruleoalba": {
+   "train": 336,
+   "test": 108,
+   "val": 279
+  },
+  "Stenella_frontalis": {
+   "val": 122,
+   "train": 183,
+   "test": 7
+  },
+  "Stenella_longirostris": {
+   "train": 435,
+   "test": 109,
+   "val": 214
+  },
+  "Tursiops_truncatus": {
+   "train": 125,
+   "test": 30,
+   "val": 29
+  },
+  "other_whale": {
+   "val": 138,
+   "train": 620,
+   "test": 138
+  }
+ },
+ "split_totals": {
+  "test": 7788,
+  "train": 30232,
+  "val": 9233
+ }
+}

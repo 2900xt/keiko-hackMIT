@@ -1,0 +1,38 @@
+{
+ "classes": [
+  "Balaena_mysticetus",
+  "Balaenoptera_acutorostrata",
+  "Balaenoptera_physalus",
+  "Delphinapterus_leucas",
+  "Delphinus_delphis",
+  "Eubalaena_glacialis",
+  "Globicephala_macrorhynchus",
+  "Globicephala_melas",
+  "Grampus_griseus",
+  "Lagenorhynchus_acutus",
+  "Lagenorhynchus_albirostris",
+  "Megaptera_novaeangliae",
+  "Orcinus_orca",
+  "Physeter_macrocephalus",
+  "Pseudorca_crassidens",
+  "Stenella_attenuata",
+  "Stenella_coeruleoalba",
+  "Stenella_longirostris",
+  "Tursiops_truncatus",
+  "other_whale"
+ ],
+ "feature_spec": {
+  "sr": 32000,
+  "win_s": 3.0,
+  "n_fft": 1024,
+  "hop": 320,
+  "n_mels": 128,
+  "fmin": 10.0,
+  "fmax": 16000.0
+ },
+ "metrics": {
+  "test_window_macro_f1": 0.4143663102768139,
+  "test_acc": 0.7354904982023626,
+  "test_clip_macro_f1": 0.4081968357244653
+ }
+}

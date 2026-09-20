@@ -1,0 +1,9 @@
+raw/
+audio/
+*.parquet
+*.zip
+*.tar.gz
+*.wav
+features/**/*.npy
+marine_sounds.sqlite
+catalog/clips.csv

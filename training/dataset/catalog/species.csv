@@ -1,0 +1,127 @@
+species_id,scientific_name,common_name,taxon_group,n_clips,minutes,n_datasets,n_sound_types
+54,Megaptera novaeangliae,Humpback whale,baleen whale,72578,1329.0,4,2
+56,Balaenoptera musculus intermedia,Antarctic blue whale,baleen whale,48006,5164.6,1,1
+65,Orcinus orca,Killer whale,toothed whale,30987,637.6,3,4
+57,Balaenoptera physalus,Fin whale,baleen whale,27830,1506.9,2,3
+1,Opsanus tau,Oyster toadfish,fish,10018,225.4,1,2
+52,Eubalaena glacialis,North Atlantic right whale,baleen whale,7462,248.9,2,2
+3,Porichthys notatus,Plainfin midshipman,fish,4660,149.1,1,1
+60,Balaenoptera bonaerensis,Antarctic minke whale,baleen whale,1424,1618.3,1,1
+66,Physeter macrocephalus,Sperm whale,toothed whale,1313,700.3,1,4
+79,Globicephala melas,Long-finned pilot whale,toothed whale,1169,53.6,1,1
+110,Stenella attenuata,Pantropical spotted dolphin,toothed whale,1033,51.3,1,0
+100,Delphinus delphis,Common dolphin,toothed whale,884,38.7,1,0
+18,Mycteroperca bonaci,Black grouper,fish,730,23.4,1,1
+59,Balaenoptera acutorostrata,Common/dwarf minke whale,baleen whale,704,177.1,2,2
+101,Stenella coeruleoalba,Striped dolphin,toothed whale,681,21.7,1,0
+99,Globicephala macrorhynchus,Short-finned pilot whale,toothed whale,619,56.4,1,0
+106,Lagenorhynchus acutus,Atlantic white-sided dolphin,toothed whale,560,27.0,1,0
+104,Pseudorca crassidens,False killer whale,toothed whale,508,16.2,1,0
+75,Stenella longirostris,Spinner dolphin,toothed whale,492,38.8,1,1
+63,Balaena mysticetus,Bowhead whale,baleen whale,404,52.1,1,1
+77,Grampus griseus,Risso's dolphin,toothed whale,359,8.2,1,1
+123,Stenella clymene,Clymene dolphin,toothed whale,328,18.2,1,0
+15,Epinephelus guttatus,Red hind,fish,326,10.4,1,1
+88,Odobenus rosmarus,Walrus,pinniped,272,15.1,1,1
+105,Stenella frontalis,Atlantic spotted dolphin,toothed whale,244,8.6,1,0
+125,Lagenodelphis hosei,Fraser's dolphin,toothed whale,199,12.0,1,0
+103,Lagenorhynchus albirostris,White-beaked dolphin,toothed whale,196,6.2,1,0
+73,Tursiops truncatus,Common bottlenose dolphin,toothed whale,184,3.3,1,2
+76,Peponocephala electra,Melon-headed whale,toothed whale,161,3.6,1,1
+80,Delphinapterus leucas,Beluga,toothed whale,150,5.1,1,2
+90,Leptonychotes weddellii,Weddell seal,pinniped,133,25.2,1,1
+93,Ommatophoca rossii,Ross seal,pinniped,131,7.2,1,1
+28,Pomacentrus amboinensis,Ambon damselfish,fish,128,4.1,1,1
+124,Steno bredanensis,Rough-toothed dolphin,toothed whale,98,2.2,1,0
+81,Monodon monoceros,Narwhal,toothed whale,86,2.1,1,1
+102,Delphinus delphis bairdii,Long-beaked common dolphin,toothed whale,69,3.9,1,0
+85,Erignathus barbatus,Bearded seal,pinniped,66,13.1,1,1
+83,Phocoenoides dalli,Dall's porpoise,toothed whale,52,0.9,1,1
+122,Eubalaena australis,Southern right whale,baleen whale,49,2.2,1,0
+89,Pagophilus groenlandicus,Harp seal,pinniped,47,2.2,1,1
+82,Phocoena phocoena,Harbour porpoise,toothed whale,46,4.0,1,1
+86,Pusa hispida,Ringed seal,pinniped,46,0.6,1,1
+114,Histriophoca fasciata,Ribbon seal,pinniped,45,1.8,1,0
+64,Eschrichtius robustus,Gray whale,baleen whale,36,2.7,1,1
+91,Hydrurga leptonyx,Leopard seal,pinniped,33,2.7,1,1
+98,Inia geoffrensis,Amazon river dolphin (boto),toothed whale,30,1.6,1,0
+111,Lagenorhynchus obscurus,Dusky dolphin,toothed whale,27,3.4,1,0
+120,Phoca largha,Spotted seal,pinniped,22,0.7,1,0
+121,Cephalorhynchus heavisidii,Heaviside's dolphin,toothed whale,14,0.9,1,0
+113,Sotalia fluviatilis,Tucuxi,toothed whale,12,0.4,1,0
+107,Halichoerus grypus,Grey seal,pinniped,7,0.1,1,0
+109,Eumetopias jubatus,Steller sea lion,pinniped,6,0.2,1,0
+119,Sotalia borneensis,Irrawaddy dolphin (as listed by Watkins),toothed whale,5,0.4,1,0
+116,Arctocephalus philippii,Juan Fernandez fur seal,pinniped,4,0.2,1,0
+55,Balaenoptera musculus,Blue whale,baleen whale,3,7.2,1,3
+108,Cystophora cristata,Hooded seal,pinniped,2,0.2,1,0
+112,Arctocephalus forsteri,New Zealand fur seal,pinniped,2,0.1,1,0
+117,Enhydra lutris,Sea otter,sea otter,2,0.1,1,0
+118,Neophocaena phocaenoides,Finless porpoise,toothed whale,2,0.1,1,0
+126,Chelidonichthys kumu,Bluefin gurnard,fish,2,0.2,1,0
+115,Cephalorhynchus commersonii,Commerson's dolphin,toothed whale,1,0.0,1,0
+2,Halobatrachus didactylus,Lusitanian toadfish,fish,0,0.0,0,1
+4,Gadus morhua,Atlantic cod,fish,0,0.0,0,1
+5,Pollachius pollachius,Pollack,fish,0,0.0,0,1
+6,Melanogrammus aeglefinus,Haddock,fish,0,0.0,0,1
+7,Pogonias cromis,Black drum,fish,0,0.0,0,1
+8,Bairdiella chrysoura,Silver perch,fish,0,0.0,0,1
+9,Cynoscion nebulosus,Spotted seatrout,fish,0,0.0,0,1
+10,Sciaenops ocellatus,Red drum,fish,0,0.0,0,1
+11,Cynoscion regalis,Weakfish,fish,0,0.0,0,1
+12,Protonibea diacanthus,Black jewfish,fish,0,0.0,0,1
+13,Argyrosomus japonicus,Mulloway,fish,0,0.0,0,1
+14,Platax orbicularis,Orbicular batfish,fish,0,0.0,0,1
+16,Epinephelus striatus,Nassau grouper,fish,0,0.0,0,1
+17,Mycteroperca venenosa,Yellowfin grouper,fish,0,0.0,0,1
+19,Epinephelus morio,Red grouper,fish,0,0.0,0,1
+20,Epinephelus itajara,Goliath grouper,fish,0,0.0,0,1
+21,Sebastes maliger,Quillback rockfish,fish,0,0.0,0,1
+22,Sebastes caurinus,Copper rockfish,fish,0,0.0,0,1
+23,Ophiodon elongatus,Lingcod,fish,0,0.0,0,1
+24,Sebastes paucispinis,Bocaccio,fish,0,0.0,0,1
+25,Chromis viridis,Blue-green damselfish,fish,0,0.0,0,1
+26,Dascyllus aruanus,Humbug dascyllus,fish,0,0.0,0,1
+27,Plectroglyphidodon lacrymatus,Whitespotted devil,fish,0,0.0,0,1
+29,Ariopsis felis,Hardhead sea catfish,fish,0,0.0,0,1
+30,Alpheus heterochaelis,Bigclaw snapping shrimp,crustacean,0,0.0,0,1
+31,Synalpheus parneomeris,Snapping shrimp,crustacean,0,0.0,0,1
+32,Athanas nitescens,Hooded shrimp,crustacean,0,0.0,0,1
+33,Maja brachydactyla,Atlantic spider crab,crustacean,0,0.0,0,1
+34,Echinus esculentus,Edible sea urchin,echinoderm,0,0.0,0,1
+35,Paracentrotus lividus,Purple sea urchin,echinoderm,0,0.0,0,1
+36,Psammechinus miliaris,Green sea urchin,echinoderm,0,0.0,0,1
+37,Evechinus chloroticus,Kina,echinoderm,0,0.0,0,1
+38,Diadema antillarum et al.,Tropical sea urchins,echinoderm,0,0.0,0,1
+39,Pecten maximus,Great scallop,mollusc,0,0.0,0,1
+40,Mimachlamys varia,Variegated scallop,mollusc,0,0.0,0,1
+41,Crepidula fornicata,Slipper limpet,mollusc,0,0.0,0,1
+42,Perna perna,Brown mussel,mollusc,0,0.0,0,1
+43,Homarus americanus,American lobster,crustacean,0,0.0,0,1
+44,Homarus gammarus,European lobster,crustacean,0,0.0,0,1
+45,Palinurus elephas,European spiny lobster,crustacean,0,0.0,0,1
+46,Panulirus interruptus,California spiny lobster,crustacean,0,0.0,0,1
+47,Hemisquilla californiensis,California mantis shrimp,crustacean,0,0.0,0,1
+48,Chionoecetes opilio,Snow crab,crustacean,0,0.0,0,1
+49,Leocratides kimuraorum,Polychaete worm,annelid,0,0.0,0,1
+50,Chelonia mydas,Green sea turtle,reptile,0,0.0,0,2
+51,Dermochelys coriacea,Leatherback,reptile,0,0.0,0,1
+53,Eubalaena japonica,North Pacific right whale,baleen whale,0,0.0,0,1
+58,Balaenoptera borealis,Sei whale,baleen whale,0,0.0,0,1
+61,Balaenoptera edeni/brydei,Bryde's whale,baleen whale,0,0.0,0,1
+62,Balaenoptera edeni,Bryde's whale (W. N. Pacific),baleen whale,0,0.0,0,2
+67,Ziphius cavirostris,Cuvier's beaked whale,toothed whale,0,0.0,0,1
+68,Mesoplodon bidens,Sowerby's beaked whale,toothed whale,0,0.0,0,1
+69,Mesoplodon europaeus,Gervais' beaked whale,toothed whale,0,0.0,0,1
+70,Mesoplodon mirus,True's beaked whale,toothed whale,0,0.0,0,1
+71,Mesoplodon densirostris,Blainville's beaked whale,toothed whale,0,0.0,0,1
+72,Berardius bairdii,Baird's beaked whale,toothed whale,0,0.0,0,1
+74,Delphinus delphis / D. delphis bairdii,Short-/long-beaked common dolphin,toothed whale,0,0.0,0,1
+78,Lagenorhynchus obliquidens,Pacific white-sided dolphin,toothed whale,0,0.0,0,1
+84,Kogia breviceps / K. sima,Pygmy/dwarf sperm whale,toothed whale,0,0.0,0,1
+87,Phoca vitulina,Harbour seal,pinniped,0,0.0,0,1
+92,Lobodon carcinophagus,Crabeater seal,pinniped,0,0.0,0,1
+94,Zalophus californianus / Eumetopias jubatus,California / Steller sea lion,pinniped,0,0.0,0,1
+95,Trichechus manatus manatus,Greater Caribbean manatee,sirenian,0,0.0,0,1
+96,Trichechus senegalensis,African manatee,sirenian,0,0.0,0,1
+97,Dugong dugon,Dugong,sirenian,0,0.0,0,1
