@@ -12,7 +12,7 @@ npm run build    # static export to out/, data/ included
 
 - `app/` — `layout.tsx` (metadata, favicon), `page.tsx` (landing), `app/page.tsx` (the app, at `/app/`), `globals.css` (dark navy, blue accent, IBM Plex Sans + Mono via `next/font`)
 - `components/`
-  - `Landing.tsx` — static landing page: hero, at-a-glance tiles, how it works, links into the app and the repo
+  - `Landing.tsx` — landing page: one hero, a statline, links to the app and the repo
   - `KeikoApp.tsx` — owns the feed, the detection list, the `#live` / `#db` hash route, and table state
   - `LiveView.tsx` — map cell + buoy rail on top, sound strip below; `MapView.tsx` (Leaflet, client-only), `Waveform.tsx` (raw-signal oscilloscope + level bar, bottom left), `Spectrogram.tsx` (scrolling mel canvas, bottom right)
   - `DatabaseView.tsx` — summary tiles, `DetectionsChart.tsx` (14-day SVG bars), filter chips, sortable table of `DetectionRow.tsx` (time, location, confidence, spectrogram thumbnail, audio clip)
