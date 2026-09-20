@@ -2,7 +2,7 @@
 """Run the Moby right-whale ensemble on audio files.
 
     python3 predict.py recording.wav [more.aiff ...]        # any sample rate; resampled to 2 kHz
-    python3 predict.py --model models/moby_narw.pt --hop 1.0 --threshold 0.5 clip.wav
+    python3 predict.py --model models/moby_narw.pt clip.wav     # the Kaggle-only model; default is models/keiko.pt
 
 Slides a 2 s window (default hop 1 s) over each file, prints P(whale) per window and the file-level max.
 """
@@ -25,7 +25,7 @@ def windows(path, hop_s):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("files", nargs="+", type=pathlib.Path)
-    ap.add_argument("--model", type=pathlib.Path, default=HERE / "models" / "moby_narw.pt")
+    ap.add_argument("--model", type=pathlib.Path, default=HERE / "models" / "keiko.pt")
     ap.add_argument("--hop", type=float, default=1.0, help="window hop in seconds")
     ap.add_argument("--threshold", type=float, default=0.5)
     a = ap.parse_args()
