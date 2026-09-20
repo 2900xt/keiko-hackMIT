@@ -1,7 +1,10 @@
 # Whale location table
 
 A cleaned, model-ready table of **real** whale detections with a known sensor position and a
-timestamp, built from the marine-sounds-db sources. Rebuild with:
+timestamp, built from the sources indexed in `training/dataset`. The committed catalog
+(`catalog/clips.csv.gz`) carries only free-text location strings and recordist notes, so the
+script reads the raw downloads that `training/dataset/fetch_data.sh` produces (Watkins parquet
+shards, the DCLDE `Annotations.csv`, the AAD Raven selection tables). Rebuild with:
 
 ```sh
 python3 build_whale_locations.py --db ~/Projects/marine-sounds-db
