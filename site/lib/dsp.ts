@@ -1,16 +1,27 @@
 // Colour map, mel scale, and the two things a live detection row renders from
 // its call parameters: a spectrogram thumbnail and an 8 kHz WAV clip.
 
-const MAGMA = [[0,0,4],[28,16,68],[79,18,123],[129,37,129],[181,54,122],[229,80,100],[251,135,97],[254,194,135],[252,253,191]];
-export const SPEC_BG = "#000004";
-
-export function magmaRGB(v: number): [number, number, number] {
-  const x = Math.max(0, Math.min(0.999, v)) * (MAGMA.length - 1), i = Math.floor(x), f = x - i, a = MAGMA[i], b = MAGMA[i + 1];
-  return [a[0] + (b[0] - a[0]) * f | 0, a[1] + (b[1] - a[1]) * f | 0, a[2] + (b[2] - a[2]) * f | 0];
+// "Sea" colour ramp: the site palette from deep water to sea-spray white.
+// Quiet bins are transparent, so a spectrogram reads as a tint over whatever
+// sits behind it (the map, a table row) rather than a black block.
+// Stops: value -> r, g, b, alpha. Mirrored in tools/keiko_data.py.
+const SEA: [number, number, number, number, number][] = [
+  [0.00, 10, 20, 32, 0.00],
+  [0.30, 23, 44, 62, 0.45],
+  [0.55, 40, 104, 150, 0.85],
+  [0.78, 87, 184, 236, 1.00],
+  [1.00, 230, 238, 245, 1.00],
+];
+export function sea(v: number): [number, number, number, number] {
+  const x = Math.max(0, Math.min(1, v));
+  let i = 0;
+  while (i < SEA.length - 2 && x > SEA[i + 1][0]) i++;
+  const a = SEA[i], b = SEA[i + 1], f = (x - a[0]) / (b[0] - a[0]);
+  return [a[1] + (b[1] - a[1]) * f | 0, a[2] + (b[2] - a[2]) * f | 0, a[3] + (b[3] - a[3]) * f | 0, a[4] + (b[4] - a[4]) * f];
 }
-export function magma(v: number) {
-  const [r, g, b] = magmaRGB(v);
-  return "rgb(" + r + "," + g + "," + b + ")";
+export function seaCss(v: number) {
+  const [r, g, b, a] = sea(v);
+  return "rgba(" + r + "," + g + "," + b + "," + a.toFixed(3) + ")";
 }
 
 export const melOf = (hz: number) => 2595 * Math.log10(1 + hz / 700);
@@ -51,8 +62,8 @@ export function drawThumb(c: HTMLCanvasElement, d: CallParams) {
       const hz = hzAt[y];
       let v = (0.22 * (1 - hz / 1000) + 0.06) * (0.5 + noise());
       if (env) v += env * Math.exp(-Math.pow((hz - f) / 22, 2));
-      const [r, gg, b] = magmaRGB(v), o = (y * W + x) * 4;
-      px[o] = r; px[o + 1] = gg; px[o + 2] = b; px[o + 3] = 255;
+      const [r, gg, b, a] = sea(v), o = (y * W + x) * 4;
+      px[o] = r; px[o + 1] = gg; px[o + 2] = b; px[o + 3] = a * 255 | 0;
     }
   }
   g.putImageData(img, 0, 0);

@@ -1,32 +1,29 @@
 "use client";
 import { useEffect, useRef } from "react";
 import type { Feed } from "@/lib/feed";
-import { SPEC_BG } from "@/lib/dsp";
-import { useAudioLevel, useFeedEvent } from "@/lib/hooks";
+import { useFeedEvent } from "@/lib/hooks";
 
-const WW = 600, WH = 240;
-const Y_TICKS: [number, string][] = [[1, "+1"], [0.5, "+0.5"], [0, "0"], [-0.5, "−0.5"], [-1, "−1"]];
-const GRID = [0.5, 0, -0.5];
-const yPct = (v: number) => (((1 - v) / 2) * 100).toFixed(2) + "%";
+const WW = 600, WH = 160;
 
 // Oscilloscope of the raw hydrophone signal, before the FFT: each audio frame
 // (256 samples at 2 kHz, 128 ms) is drawn as one trace over a short afterglow.
+// The canvas is transparent, so it sits on the map as a tint, not a block.
 export default function Waveform({ feed }: { feed: Feed }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const stroke = useRef("#57b8ec");
-  const level = useAudioLevel(feed);
 
   useEffect(() => {
-    const c = canvas.current, g = c?.getContext("2d");
-    if (!c || !g) return;
-    stroke.current = getComputedStyle(c).getPropertyValue("--accent").trim() || stroke.current;
-    g.fillStyle = SPEC_BG; g.fillRect(0, 0, WW, WH);
+    const c = canvas.current;
+    if (c) stroke.current = getComputedStyle(c).getPropertyValue("--accent").trim() || stroke.current;
   }, []);
 
   useFeedEvent(feed, "audio", (a) => {
     const c = canvas.current, g = c?.getContext("2d");
     if (!c || !g) return;
-    g.fillStyle = "rgba(0,0,4,0.6)"; g.fillRect(0, 0, WW, WH); // afterglow
+    // afterglow: fade what is there instead of painting a background over it
+    g.globalCompositeOperation = "destination-out";
+    g.fillStyle = "rgba(0,0,0,0.55)"; g.fillRect(0, 0, WW, WH);
+    g.globalCompositeOperation = "source-over";
     const s = a.samples, n = s.length, mid = WH / 2, gain = mid * 0.9;
     g.beginPath();
     for (let i = 0; i < n; i++) {
@@ -36,28 +33,10 @@ export default function Waveform({ feed }: { feed: Feed }) {
     g.strokeStyle = stroke.current; g.lineWidth = 1.5; g.lineJoin = "round"; g.stroke();
   });
 
-  const pct = level === null ? 0 : Math.max(0, Math.min(100, ((level + 60) / 60) * 100));
   return (
-    <>
-      <div className="spec-wrap">
-        <div className="spec-y" aria-hidden="true">
-          {Y_TICKS.map(([v, label]) => <span key={v} style={{ top: yPct(v) }}>{label}</span>)}
-        </div>
-        <div className="spec-box">
-          <canvas className="scope" ref={canvas} width={WW} height={WH} aria-label="Live waveform" />
-          <div className="spec-grid" aria-hidden="true">
-            {GRID.map((v) => <i key={v} className={v === 0 ? "zero" : undefined} style={{ top: yPct(v) }} />)}
-          </div>
-        </div>
-      </div>
-      <div className="spec-x" aria-hidden="true"><span>0 ms</span><span>32</span><span>64</span><span>96</span><span>128 ms</span></div>
-      <div className="level">
-        <span className="eyebrow" id="level-label">Level</span>
-        <span className="level-bar" role="meter" aria-labelledby="level-label" aria-valuemin={-60} aria-valuemax={0} aria-valuenow={level === null ? undefined : Math.round(level)} aria-valuetext={level === null ? "no signal" : level.toFixed(1) + " dB"}>
-          <i style={{ transform: "scaleX(" + (pct / 100).toFixed(3) + ")" }} />
-        </span>
-        <span className="level-val" aria-hidden="true">{level === null ? "— dB" : level.toFixed(1) + " dB"}</span>
-      </div>
-    </>
+    <div className="scope-box">
+      <canvas className="scope" ref={canvas} width={WW} height={WH} aria-label="Live waveform, last 128 ms" />
+      <i className="scope-zero" aria-hidden="true" />
+    </div>
   );
 }

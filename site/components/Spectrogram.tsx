@@ -1,48 +1,35 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import type { Feed } from "@/lib/feed";
-import { magma, melOf, MEL_MAX, SPEC_BG, yPct } from "@/lib/dsp";
+import { melOf, MEL_MAX, seaCss } from "@/lib/dsp";
 import { useFeedEvent } from "@/lib/hooks";
 
-const SW = 600, SH = 240;
-const Y_TICKS: [number, string][] = [[1000, "1 kHz"], [500, "500"], [250, "250"], [100, "100"], [0, "0"]];
-const GRID_HZ = [500, 250, 100];
+const SW = 600, SH = 160;
 
 // Scrolling mel spectrogram: each audio frame shifts the canvas one pixel left
-// and paints its 80 bins down the right edge.
+// and paints its 80 bins down the right edge. Quiet bins are transparent
+// (see the sea ramp in lib/dsp.ts), so the map shows through the noise floor.
 export default function Spectrogram({ feed }: { feed: Feed }) {
   const canvas = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const g = canvas.current?.getContext("2d");
-    if (g) { g.fillStyle = SPEC_BG; g.fillRect(0, 0, SW, SH); }
-  }, []);
 
   useFeedEvent(feed, "audio", (a) => {
     const c = canvas.current, g = c?.getContext("2d");
     if (!c || !g) return;
+    // "copy" replaces every pixel with the shifted image, transparent ones included;
+    // source-over would stack the translucent haze on itself each frame.
+    g.globalCompositeOperation = "copy";
     g.drawImage(c, -1, 0);
+    g.globalCompositeOperation = "source-over";
     const b = a.bins, n = b.length;
     for (let i = 0; i < n; i++) {
       const y0 = SH - melOf((i + 1) / n * 1000) / MEL_MAX * SH, y1 = SH - melOf(i / n * 1000) / MEL_MAX * SH;
-      g.fillStyle = magma(b[i]); g.fillRect(SW - 1, y0, 1, Math.ceil(y1 - y0));
+      g.fillStyle = seaCss(b[i]); g.fillRect(SW - 1, y0, 1, Math.ceil(y1 - y0));
     }
   });
 
   return (
-    <>
-      <div className="spec-wrap">
-        <div className="spec-y" aria-hidden="true">
-          {Y_TICKS.map(([hz, label]) => <span key={hz} style={{ top: yPct(hz) }}>{label}</span>)}
-        </div>
-        <div className="spec-box">
-          <canvas id="spec" className="scope" ref={canvas} width={SW} height={SH} aria-label="Live spectrogram" />
-          <div className="spec-grid" aria-hidden="true">
-            {GRID_HZ.map((hz) => <i key={hz} style={{ top: yPct(hz) }} />)}
-          </div>
-        </div>
-      </div>
-      <div className="spec-x" aria-hidden="true"><span>−30 s</span><span>−20 s</span><span>−10 s</span><span>now</span></div>
-    </>
+    <div className="scope-box">
+      <canvas id="spec" className="scope" ref={canvas} width={SW} height={SH} aria-label="Live spectrogram, 0 to 1 kHz, last 30 seconds" />
+    </div>
   );
 }

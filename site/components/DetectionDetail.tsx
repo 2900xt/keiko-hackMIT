@@ -75,7 +75,7 @@ export default function DetectionDetail({ d, origin, player, index, count, onSte
       <div className="detail-spec">
         <div className="block-head">
           <div className="eyebrow">Spectrogram</div>
-          <div className="eyebrow eyebrow-quiet">Mel scale · 0–1 kHz · {span.toFixed(1)} s window</div>
+          <div className="eyebrow eyebrow-quiet">0–1 kHz · {span.toFixed(1)} s window</div>
         </div>
         <div className="spec-wrap">
           <div className="spec-y" aria-hidden="true">
