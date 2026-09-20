@@ -23,8 +23,7 @@ piezos ─► PN2222 Darlington follower ─► A0 (14-bit ADC, ~3.3 kHz)
 | `python/main.py` | Linux: receives blocks, health line, UDP forward, WAV log |
 | `python/test_node.py` | offline test of the Python side with synthetic blocks (`make test`) |
 | `python/keiko.env` | settings: UDP destination, node id, WAV log (app.yaml can't carry env vars) |
-| `python/udp_listen.py` | receiver that prints what the UDP stream delivers (`make listen`) |
-| `record.sh` | runs on the board for `make record`: WAV logging on, restart, wait, record, stop, WAV logging off |
+| `python/udp_listen.py` | receiver that prints what the UDP stream delivers (`make listen`) and can record it to a WAV (`make record`) |
 | `app.yaml` | App Lab / `arduino-app-cli` manifest |
 | `Makefile` | `make start` / `logs` / `stop` … over USB (adb) or Wi-Fi (ssh) |
 
@@ -88,7 +87,7 @@ make stop      make shell             make ip
 ### Record a clip and run it through the whale CNN (the MVP loop, by hand)
 
 ```bash
-make record DURATION=30                      # -> recordings/<utc>.wav on this Mac (3333 Hz, 16-bit mono)
+make record DURATION=30                      # -> recordings/<utc>.wav on this Mac (3333 Hz, 16-bit mono); app keeps running
 ```
 
 ```bash

@@ -11,7 +11,7 @@
 #   make logs        last 30 lines of the app's output          make follow    stream it
 #   make stop        stop the app                               make shell     shell on the board
 #   make ip          board hostname + IP                        make listen    receive the UDP stream here (see below)
-#   make record      record DURATION=30 seconds from the hydrophone into recordings/<utc>.wav on this Mac
+#   make record      record DURATION=30 seconds from the hydrophone into recordings/<utc>.wav on this Mac (no restart)
 #
 # Over Wi-Fi instead: `make enable-ssh` once over USB, then add `VIA=ssh BOARD=<ip or name.local>` to any target.
 #
@@ -97,12 +97,13 @@ shell: adb-check
 ip: adb-check
 	$(RUN) "hostname; hostname -I"
 
-# Record from the hydrophone: the app restarts with WAV logging on, records DURATION seconds, restarts without it
-# (~40 s overhead on top of DURATION). The file lands in recordings/ here (gitignored via *.wav).
+# Record DURATION seconds from the hydrophone into recordings/<utc>.wav on this Mac. Captures the UDP stream on the
+# board's Linux side with python/udp_listen.py, so the app keeps running (no restart, no re-flash). Needs
+# KEIKO_UDP_HOST=auto (the default) so the stream reaches the board host.
 record: deploy
-	$(RUN) "sh $(APP_DIR)/record.sh $(DURATION)"
+	$(RUN) "python3 $(APP_DIR)/python/udp_listen.py --wav /tmp/keiko-rec.wav --seconds $(DURATION)"
 	@mkdir -p recordings
-	$(PULL)$(APP_DIR)/python/hydro.wav recordings/$$(date -u +%Y%m%dT%H%M%SZ).wav
+	$(PULL)/tmp/keiko-rec.wav recordings/$$(date -u +%Y%m%dT%H%M%SZ).wav
 	@ls -la recordings | tail -1
 
 # Turns on SSH (App Lab's "network mode"). Needed once before VIA=ssh; the board must already be on Wi-Fi.
