@@ -6,7 +6,6 @@ venv/
 .env
 *.wav
 *.flac
-data/
 models/*.pt
 models/*.onnx
 build/
@@ -17,6 +16,6 @@ node_modules/
 training/dataset/audio
 training/dataset/raw
 
-# the detection database under open-source/data is meant to be committed
-!open-source/data/
-!open-source/data/clips/*.wav
+# the detection database under site/data is meant to be committed (clips included)
+!site/data/
+!site/data/clips/*.wav
