@@ -3,12 +3,12 @@
 
     python3 keiko_pipeline.py                      # listen on 0.0.0.0:5005 for node packets (see firmware/unoq/python/main.py)
     python3 keiko_pipeline.py --wav rec.wav        # same logic over a file, as fast as possible (offline test)
-    python3 keiko_pipeline.py --archive            # also add each event to open-source/data (then commit that folder)
+    python3 keiko_pipeline.py --archive            # also add each event to site/data (then commit that folder)
 
 Every --hop seconds the last --win seconds of audio are resampled to the model's 32 kHz, turned into the same
 log-mel window predict.py uses, and classified. A run of whale windows becomes one event; when it ends the clip
 is written to --out as WAV plus a line in events.jsonl, and with --archive it goes through
-open-source/tools/keiko_data.py add (clip, spectrogram, CSV/JSON row) so the website shows it.
+site/tools/keiko_data.py add (clip, spectrogram, CSV/JSON row) so the website shows it.
 
 Deps: the training/whale_cnn venv (torch, librosa, soundfile, pandas, scikit-learn) plus scipy, matplotlib, pillow
 for --archive. See README.md. To feed it without a board: `python3 replay_wav.py some.wav` in another terminal.
@@ -116,7 +116,7 @@ class Detector:
         self.out = pathlib.Path(a.out); self.out.mkdir(parents=True, exist_ok=True)
         self.keiko_data = None
         if a.archive:
-            p = REPO / "open-source" / "tools" / "keiko_data.py"
+            p = REPO / "site" / "tools" / "keiko_data.py"
             s = importlib.util.spec_from_file_location("keiko_data", p); self.keiko_data = importlib.util.module_from_spec(s)
             s.loader.exec_module(self.keiko_data)
 
@@ -243,7 +243,7 @@ def run_wav(a, det, streams):
 
 
 def load_buoy(a):
-    rows = {r["buoy_id"]: r for r in csv.DictReader(open(REPO / "open-source" / "data" / "buoys.csv"))}
+    rows = {r["buoy_id"]: r for r in csv.DictReader(open(REPO / "site" / "data" / "buoys.csv"))}
     b = rows.get(a.buoy)
     if b is None and (a.lat is None or a.lon is None):
         sys.exit(f"unknown buoy {a.buoy} and no --lat/--lon given")
@@ -266,7 +266,7 @@ def main():
     ap.add_argument("--max_s", type=float, default=30.0, help="force-close events longer than this")
     ap.add_argument("--buoy", default="KEIKO-01"); ap.add_argument("--lat", type=float); ap.add_argument("--lon", type=float)
     ap.add_argument("--out", default=str(pathlib.Path(__file__).resolve().parent / "out"))
-    ap.add_argument("--archive", action="store_true", help="add events to open-source/data via keiko_data.py")
+    ap.add_argument("--archive", action="store_true", help="add events to site/data via keiko_data.py")
     ap.add_argument("--source", default="field", choices=["field", "synthetic"], help="source column for --archive (use synthetic for replays/tests)")
     ap.add_argument("--quiet", action="store_true", help="only print events")
     a = ap.parse_args()
@@ -275,7 +275,7 @@ def main():
     buoy = load_buoy(a)
     print(f"model {pathlib.Path(a.model).name}: {len(classes)} classes, {spec['sr']} Hz {spec['win_s']} s windows; "
           f"thresholds min_conf={a.min_conf} margin={a.margin}; buoy {buoy['id']} @ {buoy['lat']:.5f},{buoy['lon']:.5f}; "
-          f"events -> {a.out}" + (" + open-source/data" if a.archive else ""), flush=True)
+          f"events -> {a.out}" + (" + site/data" if a.archive else ""), flush=True)
     det = Detector(a, model, classes, spec, buoy)
     streams = {}
     try:
