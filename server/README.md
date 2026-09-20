@@ -18,7 +18,9 @@ cd pipeline && make live ARGS="--server ws://127.0.0.1:8765"    # or make demo A
 cd site && npm run dev                          # the Live tab connects to ws://localhost:8765 in dev
 ```
 
-`make server ARGS="--inject 6"` fakes a humpback every 6 s so the map can be worked on without a pipeline.
+`make server ARGS="--inject 6"` fakes a detection every 6 s so the map can be worked on without a pipeline: a
+humpback in the harbor, a motorboat or crew shell on the Charles. `--site charles` (default) or `--site harbor`
+picks the buoy position and channel axis from `site/data/sites.json`, the same file the website's `?site=` reads.
 
 The site's static build (GitHub Pages) has no server and keeps its synthetic feed; set `NEXT_PUBLIC_KEIKO_WS`
 at build time to point a deployed site at a reachable server. In `npm run dev` the page falls back to the

@@ -1,0 +1,22 @@
+{
+  "_comment": "Demo sites for the simulated data. The website (?site=), server/keiko_server.py --site and tools/keiko_data.py synth --site all read this file. The physical buoy's registry row is buoys.csv.",
+  "default": "charles",
+  "sites": {
+    "charles": {
+      "name": "Charles River",
+      "place": "Charles River Basin off the MIT Sailing Pavilion",
+      "buoy": { "id": "KEIKO-01", "lat": 42.3572, "lon": -71.0868 },
+      "channel": { "bearing_deg": 60, "half_len_m": 450, "half_width_m": 110, "_comment": "the basin runs NE-SW here, ~500 m wide; sources stay near the Cambridge shore" },
+      "soundscape": "river",
+      "classes": ["motorboat", "crew shell", "ambient"]
+    },
+    "harbor": {
+      "name": "Boston Harbor",
+      "place": "President Roads, between Deer Island and Long Island",
+      "buoy": { "id": "KEIKO-01", "lat": 42.34, "lon": -70.97 },
+      "channel": { "bearing_deg": 90, "half_len_m": 450, "half_width_m": 200, "_comment": "the shipping channel runs E-W between the islands" },
+      "soundscape": "whale",
+      "classes": ["tonal call"]
+    }
+  }
+}

@@ -23,6 +23,8 @@ interface Props {
 }
 
 const FILTERS: [Filter, string][] = [["all", "All"], ["live", "Live this session"], ["archive", "Archived"]];
+// On the Charles the rows are boats, not whales, so the title drops the word when a non-whale class is listed.
+const WHALE_WORDS = /whale|dolphin|porpoise|orca|unknown/i;
 
 export default function DatabaseView({ active, now, detections, archive, onRetry, buoy, filter, onFilter, sortKey, sortDir, onSort, onHover, player, selectedId, onSelect, onShowOnMap }: Props) {
   const rows = useMemo(
@@ -49,7 +51,7 @@ export default function DatabaseView({ active, now, detections, archive, onRetry
       <div className="db-head">
         <div>
           <div className="eyebrow">Detection database</div>
-          <h1 className="db-title"><span>{detections.length}</span> whale detections</h1>
+          <h1 className="db-title"><span>{detections.length}</span> {detections.some((d) => d.species && !WHALE_WORDS.test(d.species)) ? "detections" : "whale detections"}</h1>
           <p className="meta" role="status">{summary}</p>
         </div>
         <div className="db-links">

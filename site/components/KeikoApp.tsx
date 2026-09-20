@@ -2,16 +2,23 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createFeed, type Buoy, type Hearing, type Status, type Telemetry, type Track } from "@/lib/feed";
 import { fromArchive, fromLive, loadArchive, loadBuoy, type BuoyInfo, type Detection } from "@/lib/detections";
+import { DEFAULT_SITE, distanceM, readSiteKey, rememberSiteKey, SITE_RADIUS_M, SITES, storeSiteKey, type SiteKey } from "@/lib/sites";
 import { useFeedEvent, useNow, usePlayer } from "@/lib/hooks";
 import Header from "./Header";
 import LiveView from "./LiveView";
 import DatabaseView, { type ArchiveState, type Filter, type SortKey } from "./DatabaseView";
+import Ask from "./Ask";
 
 export type View = "live" | "db";
 export type Link = "" | "on" | "stale" | "off"; // connection state, doubles as a CSS class
 
 export default function KeikoApp() {
-  const feed = useMemo(() => createFeed(), []);
+  // ---------- site (?site=charles | harbor) ----------
+  // The build renders the default site; the browser's choice is read once mounted, so both renders agree.
+  const [siteKey, setSiteKey] = useState<SiteKey>(DEFAULT_SITE);
+  useEffect(() => { const k = readSiteKey(); storeSiteKey(k); if (k !== DEFAULT_SITE) { setSiteKey(k); setBuoys([SITES[k].buoy]); } }, []);
+  const site = SITES[siteKey];
+  const feed = useMemo(() => createFeed(site), [site]);
   const now = useNow(1000);
 
   // ---------- view (hash-routed: #live / #db) ----------
@@ -47,6 +54,15 @@ export default function KeikoApp() {
     loadBuoy(feed.buoy.id).then((b) => alive && setBuoyInfo(b)).catch(() => alive && setBuoyInfo(null));
     return () => { alive = false; };
   }, [feed]);
+  // Moving the demo to the other site: the old feed's telemetry, calls and tracks are 10 km away, so they go.
+  const changeSite = useCallback((k: SiteKey) => {
+    if (k === siteKey) return;
+    rememberSiteKey(k);
+    setSiteKey(k);
+    setBuoys([SITES[k].buoy]); setTelemetry(null); setLastAt(0); setHearing(null); setTracks([]);
+    setStatus({ connected: false, node_online: false, synthetic: true });
+    setDetections((xs) => xs.filter((x) => !x.live));
+  }, [siteKey]);
 
   const age = now && lastAt ? now - lastAt : 0;
   const link: Link = !lastAt ? "" : age > 10000 ? "off" : age > 5000 ? "stale" : "on";
@@ -83,6 +99,9 @@ export default function KeikoApp() {
 
   useEffect(() => { feed.start(); return () => feed.stop(); }, [feed]);
 
+  // The archive holds every site's rows; this page shows the ones near its buoy (live rows are already its own).
+  const shown = useMemo(() => detections.filter((d) => d.live || distanceM(feed.buoy, d) <= SITE_RADIUS_M), [detections, feed.buoy]);
+
   // ---------- table state ----------
   const [filter, setFilter] = useState<Filter>("all");
   const [sortKey, setSortKey] = useState<SortKey>("ts");
@@ -102,17 +121,18 @@ export default function KeikoApp() {
 
   return (
     <>
-      <Header view={view} count={detections.length} link={link} linkWord={linkWord} now={now} onSkip={skipToContent} />
+      <Header view={view} count={shown.length} link={link} linkWord={linkWord} now={now} onSkip={skipToContent} />
       <p className="sr-only" role="status" aria-live="polite">{announce}</p>
       <LiveView
         feed={feed} active={view === "live"} now={now}
         buoyId={telemetry?.id ?? "—"} position={position} telemetry={telemetry} buoyInfo={buoyInfo}
         link={link} linkWord={linkWord} age={age} lastAt={lastAt}
-        detections={detections} hoveredId={hoveredId} focus={focus}
+        detections={shown} hoveredId={hoveredId} focus={focus}
         buoys={buoys} tracks={tracks} hearing={hearing} status={status}
+        site={site} onSite={changeSite}
       />
       <DatabaseView
-        active={view === "db"} now={now} detections={detections} archive={archive} onRetry={loadDb}
+        active={view === "db"} now={now} detections={shown} archive={archive} onRetry={loadDb}
         buoy={feed.buoy}
         filter={filter} onFilter={setFilter}
         sortKey={sortKey} sortDir={sortDir}
@@ -120,6 +140,7 @@ export default function KeikoApp() {
         onHover={setHoveredId} player={player}
         selectedId={selectedId} onSelect={setSelectedId} onShowOnMap={showOnMap}
       />
+      <Ask />
     </>
   );
 }

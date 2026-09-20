@@ -2,6 +2,7 @@
 import dynamic from "next/dynamic";
 import type { Buoy, Feed, Hearing, Status, Telemetry, Track } from "@/lib/feed";
 import { ago, agoParts, RANGE_M, type BuoyInfo, type Detection } from "@/lib/detections";
+import { SITE_KEYS, SITES, type Site, type SiteKey } from "@/lib/sites";
 import Spectrogram from "./Spectrogram";
 import Waveform from "./Waveform";
 import type { Link } from "./KeikoApp";
@@ -16,11 +17,22 @@ interface Props {
   link: Link; linkWord: string; age: number; lastAt: number;
   detections: Detection[]; hoveredId: string | null; focus: { id: string; n: number } | null;
   buoys: Buoy[]; tracks: Track[]; hearing: Hearing | null; status: Status;
+  site: Site; onSite: (k: SiteKey) => void;
 }
 
-export default function LiveView({ feed, active, now, buoyId, position, telemetry, buoyInfo, link, linkWord, age, lastAt, detections, hoveredId, focus, buoys, tracks, hearing, status }: Props) {
+// What the classifier window says it hears. Whale classes carry a species; anything else is shown by its label,
+// except the pipeline's own "no_whale*" classes, which read as plain "no whale".
+function hearingText(h: Hearing | null) {
+  if (!h) return "—";
+  const pct = " · " + Math.round(h.conf * 100) + "%";
+  if (h.whale) return (h.species ?? h.label) + pct;
+  return h.label && !h.label.startsWith("no_whale") ? h.label + pct : "no whale";
+}
+
+export default function LiveView({ feed, active, now, buoyId, position, telemetry, buoyInfo, link, linkWord, age, lastAt, detections, hoveredId, focus, buoys, tracks, hearing, status, site, onSite }: Props) {
   const simulated = buoys.filter((b) => b.simulated);
   const latest = detections.filter((d) => d.live && d.fix).at(-1);
+  const river = site.soundscape === "river";
   return (
     <main className={"grid view" + (active ? "" : " hidden")} id="view-live" tabIndex={-1} aria-label="Live">
       <section className="map-cell" aria-label="Map">
@@ -62,21 +74,28 @@ export default function LiveView({ feed, active, now, buoyId, position, telemetr
             <span className={"state " + link}>{linkWord}</span>
           </div>
           {status.synthetic ? (
-            <p className="notice">
-              <b>Simulated feed.</b>
-              <span>Telemetry, audio and calls are generated in the browser, not recorded at sea.</span>
-            </p>
+            <>
+            </>
           ) : !status.node_online && (
             <p className="notice">
               <b>{status.connected ? "Buoy offline." : "Server offline."}</b>
               <span>{status.connected ? "The server is up but no pipeline is streaming to it." : "Waiting for the central server."}</span>
             </p>
           )}
+          {/* With no server connected the demo site is the browser's to choose; a connected server decides for itself. */}
+          {(status.synthetic || !status.connected) && (
+            <div className="site-pick" role="group" aria-label="Demo site">
+              <span className="eyebrow">Site</span>
+              <div className="chips">
+                {SITE_KEYS.map((k) => (
+                  <button key={k} type="button" className="chip chip-sm" aria-pressed={k === site.key} title={SITES[k].place} onClick={() => onSite(k)}>{SITES[k].name}</button>
+                ))}
+              </div>
+            </div>
+          )}
           <div className="hearing" aria-live="polite">
             <span className="eyebrow">Hearing now</span>
-            <span className={"val" + (hearing?.whale ? " whale" : "")}>
-              {hearing ? (hearing.whale ? (hearing.species ?? hearing.label) + " · " + Math.round(hearing.conf * 100) + "%" : "no whale") : "—"}
-            </span>
+            <span className={"val" + (hearing?.whale ? " whale" : "")}>{hearingText(hearing)}</span>
           </div>
           <dl className="kv">
             <div>
@@ -128,7 +147,7 @@ export default function LiveView({ feed, active, now, buoyId, position, telemetr
               )}
             </>
           ) : (
-            <p className="fine">{status.synthetic ? "No server: calls are placed at random, not localized." : "Waiting for a call to localize."}</p>
+            <p className="fine">{status.synthetic ? "No server: " + (river ? "boats" : "calls") + " are placed at random along the channel, not localized." : "Waiting for a call to localize."}</p>
           )}
         </section>
 

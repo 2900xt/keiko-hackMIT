@@ -13,20 +13,24 @@ The database is the site/data/ folder of this repo:
 Commands
   add      append a detection from a WAV file (renders its spectrogram)
   rebuild  regenerate detections.json (and any missing spectrograms) from the CSV
-  synth    generate N synthetic detections to seed or demo the database
+  synth    generate N synthetic detections to seed or demo the database, at one of the demo sites in
+           data/sites.json: `charles` (default) sounds like river traffic (motorboats, crew shells), `harbor`
+           like tonal whale-ish calls. --replace drops that site's earlier synthetic rows (and their files).
 
 Examples
   python3 tools/keiko_data.py add --wav call.wav --buoy KEIKO-01 \
-      --time 2026-09-20T14:03:11Z --lat 42.34 --lon -70.97 --confidence 0.87
+      --time 2026-09-20T14:03:11Z --lat 42.3572 --lon -71.0868 --confidence 0.87
   python3 tools/keiko_data.py rebuild
-  python3 tools/keiko_data.py synth --n 24 --seed 1
+  python3 tools/keiko_data.py synth --n 24 --seed 1                   # Charles River traffic
+  python3 tools/keiko_data.py synth --site harbor --n 24 --seed 1     # Boston Harbor calls
 """
 import argparse, csv, json, math, random, shutil, struct, sys, wave
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent / "data"
-CSV, JSON_, BUOYS = ROOT / "detections.csv", ROOT / "detections.json", ROOT / "buoys.csv"
+CSV, JSON_, BUOYS, SITES = ROOT / "detections.csv", ROOT / "detections.json", ROOT / "buoys.csv", ROOT / "sites.json"
+SITE_RADIUS_M = 5000   # a row belongs to the site whose buoy is within this
 FIELDS = ["id", "buoy_id", "timestamp_utc", "latitude", "longitude", "confidence", "species",
           "peak_hz", "duration_s", "sample_rate_hz", "clip_path", "spectrogram_path", "source", "notes"]
 
@@ -58,6 +62,19 @@ def write_rows(rows):
 def read_buoys():
     with BUOYS.open(newline="") as f:
         return {r["buoy_id"]: r for r in csv.DictReader(f)}
+
+
+def read_site(key):
+    cfg = json.loads(SITES.read_text())
+    key = key or cfg["default"]
+    if key not in cfg["sites"]:
+        sys.exit(f"unknown site {key!r}; data/sites.json has: {', '.join(cfg['sites'])}")
+    return dict(cfg["sites"][key], key=key)
+
+
+def distance_m(lat0, lon0, lat, lon):
+    north = (lat - lat0) * 111320; east = (lon - lon0) * 111320 * math.cos(math.radians(lat0))
+    return math.hypot(north, east)
 
 
 def now_iso():
@@ -171,40 +188,100 @@ def cmd_rebuild(a):
     print(f"wrote {JSON_.name} with {len(rows)} detections")
 
 
+# ---------- synthetic audio ----------------------------------------------------
+def synth_call(rng, np, sr):
+    """Harbor: a whale-like tonal sweep under a sine envelope over a flat noise floor. Returns (x, species, peak_hz, dur)."""
+    f0, sweep, amp, dur = rng.uniform(80, 400), rng.uniform(-150, 150), rng.uniform(0.4, 0.8), rng.uniform(1.5, 5.0)
+    n = int(sr * (dur + 0.6)); t = np.arange(n) / sr - 0.3; ph = np.clip(t / dur, 0, 1)
+    env = np.where((t > 0) & (t < dur), np.sin(ph * np.pi) * amp, 0)
+    phase = 2 * np.pi * np.cumsum(f0 + sweep * ph) / sr
+    x = np.random.default_rng(rng.getrandbits(32)).uniform(-0.5, 0.5, n) * 0.12 + env * np.sin(phase)
+    return x.astype("float32"), "unknown", f0 + sweep / 2, dur, amp
+
+
+def lowpass(x, hz, sr):
+    """One-pole low-pass, the cheapest way to make white noise sound like water rather than hiss."""
+    from scipy.signal import lfilter
+    a = math.exp(-2 * math.pi * hz / sr)
+    return lfilter([1 - a], [1, -a], x)
+
+
+def river_floor(nrng, np, n, sr):
+    """Lapping water and wind: low-passed noise that slowly breathes, with a little hiss on top."""
+    w = nrng.uniform(-1, 1, n)
+    y = lowpass(w, 120, sr); y /= max(1e-6, np.abs(y).max())
+    t = np.arange(n) / sr
+    return y * 0.10 * (1 + 0.15 * np.sin(2 * np.pi * t / 6.1) + 0.08 * np.sin(2 * np.pi * t / 1.7)) + w * 0.03
+
+
+def synth_river(rng, np, sr):
+    """Charles: a motorboat pass (engine/prop hum with harmonics, cavitation wash, pitch dropping through the pass) or
+    a crew shell (a broadband catch every 1.7-2.0 s, nothing tonal). Returns (x, species, peak_hz, dur, amp)."""
+    nrng = np.random.default_rng(rng.getrandbits(32))
+    dur = rng.uniform(6, 12); n = int(sr * (dur + 1.0)); t = np.arange(n) / sr - 0.5
+    ph = np.clip(t / dur, 0, 1); inside = (t > 0) & (t < dur)
+    passenv = np.where(inside, np.sin(ph * np.pi) ** 0.7, 0)
+    x = river_floor(nrng, np, n, sr)
+    if rng.random() < 0.6:
+        f0, amp = rng.uniform(60, 140), rng.uniform(0.5, 0.9)
+        f = f0 * (1 + 0.04 * (1 - 2 * ph))                          # Doppler: falls through the pass
+        phase = 2 * np.pi * np.cumsum(f) / sr
+        hum = sum(np.sin(phase * k) / k for k in range(1, 6)) * 0.45
+        x = x + passenv * amp * (hum + nrng.uniform(-0.5, 0.5, n) * 0.35)
+        return x.astype("float32"), "motorboat", f0, dur, amp
+    period, amp = rng.uniform(1.7, 2.0), rng.uniform(0.25, 0.45)
+    sp = np.mod(t, period) / period                                   # stroke phase: catch, drive, recovery
+    catch = np.where(sp < 0.08, 1 - sp / 0.08, 0)
+    wash = np.where(sp < 0.45, 0.25, 0.06)
+    burst = nrng.uniform(-0.5, 0.5, n) * (catch * 1.5 + wash)
+    # the catch is a low thud: low-pass the burst so its energy sits under ~250 Hz
+    y = lowpass(burst, 250, sr) * 4.0
+    x = x + passenv * amp * (y + burst * 0.15)
+    return x.astype("float32"), "crew shell", rng.uniform(70, 110), dur, amp
+
+
 def cmd_synth(a):
-    """Synthetic calls: noise floor + frequency sweep under a sine envelope, near the buoy in open water."""
+    """Synthetic detections at a demo site: whale-like sweeps in the harbor, river traffic on the Charles, placed
+    along the site's channel (spread along its axis, a smaller spread across it)."""
     import numpy as np
     rng = random.Random(a.seed)
-    buoys = read_buoys()
-    b = buoys[a.buoy]
-    blat, blon = float(b["latitude"]), float(b["longitude"])
+    site = read_site(a.site)
+    buoy = site["buoy"]["id"]; blat, blon = float(site["buoy"]["lat"]), float(site["buoy"]["lon"])
+    ch = site["channel"]; river = site.get("soundscape") == "river"
     sr = 8000
-    rows = [r for r in read_rows() if r["source"] != "synthetic"] if a.replace else read_rows()
+    rows = read_rows()
+    if a.replace:
+        keep, drop = [], []
+        for r in rows:
+            mine = r["source"] == "synthetic" and distance_m(blat, blon, float(r["latitude"]), float(r["longitude"])) <= SITE_RADIUS_M
+            (drop if mine else keep).append(r)
+        for r in drop:
+            for k in ("clip_path", "spectrogram_path"):
+                (ROOT / r[k]).unlink(missing_ok=True)
+        rows = keep
+        print(f"dropped {len(drop)} earlier synthetic rows at {site['name']}")
     start = datetime.now(timezone.utc) - timedelta(days=a.days)
     for i in range(a.n):
         ts = start + timedelta(seconds=rng.uniform(0, a.days * 86400))
-        det_id = make_id(a.buoy, ts)
-        f0, sweep, amp, dur = rng.uniform(80, 400), rng.uniform(-150, 150), rng.uniform(0.4, 0.8), rng.uniform(1.5, 5.0)
-        n = int(sr * (dur + 0.6)); t = np.arange(n) / sr - 0.3; ph = np.clip(t / dur, 0, 1)
-        env = np.where((t > 0) & (t < dur), np.sin(ph * np.pi) * amp, 0)
-        phase = 2 * np.pi * np.cumsum(f0 + sweep * ph) / sr
-        x = (np.random.default_rng(rng.getrandbits(32)).uniform(-0.5, 0.5, n) * 0.12 + env * np.sin(phase)).astype("float32")
+        det_id = make_id(buoy, ts)
+        x, species, peak, dur, amp = (synth_river if river else synth_call)(rng, np, sr)
         clip = ROOT / "clips" / f"{det_id}.wav"; png = ROOT / "spectrograms" / f"{det_id}.png"
         write_wav(clip, sr, x); render_spectrogram(clip, png)
-        # position: uniform within 450 m of the buoy (open water, no shoreline)
-        r, ang = 450 * math.sqrt(rng.random()), rng.uniform(0, 2 * math.pi)
-        east, north = r * math.sin(ang), r * math.cos(ang)
+        # position: along the channel axis, a smaller spread across it
+        along, across = rng.uniform(-ch["half_len_m"], ch["half_len_m"]), rng.uniform(-ch["half_width_m"], ch["half_width_m"])
+        ax, ay = math.sin(math.radians(ch["bearing_deg"])), math.cos(math.radians(ch["bearing_deg"]))
+        east, north = along * ax + across * ay, along * ay - across * ax
         lat = blat + north / 111320; lon = blon + east / (111320 * math.cos(math.radians(blat)))
         rows.append({
-            "id": det_id, "buoy_id": a.buoy, "timestamp_utc": ts.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "id": det_id, "buoy_id": buoy, "timestamp_utc": ts.strftime("%Y-%m-%dT%H:%M:%SZ"),
             "latitude": f"{lat:.5f}", "longitude": f"{lon:.5f}",
             "confidence": f"{min(0.99, max(0.4, 0.45 + amp * 0.55 + rng.uniform(-0.08, 0.08))):.2f}",
-            "species": "unknown", "peak_hz": f"{f0 + sweep / 2:.0f}", "duration_s": f"{dur:.1f}", "sample_rate_hz": str(sr),
+            "species": species, "peak_hz": f"{peak:.0f}", "duration_s": f"{dur:.1f}", "sample_rate_hz": str(sr),
             "clip_path": f"clips/{det_id}.wav", "spectrogram_path": f"spectrograms/{det_id}.png",
-            "source": "synthetic", "notes": "generated by tools/keiko_data.py synth",
+            "source": "synthetic", "notes": f"generated by tools/keiko_data.py synth --site {site['key']}",
         })
     write_rows(rows)
-    print(f"wrote {a.n} synthetic detections ({len(rows)} total)")
+    print(f"wrote {a.n} synthetic detections at {site['name']} ({len(rows)} total)")
 
 
 def main():
@@ -218,7 +295,8 @@ def main():
     s = sub.add_parser("rebuild", help="regenerate detections.json and missing spectrograms"); s.set_defaults(fn=cmd_rebuild)
     s = sub.add_parser("synth", help="generate synthetic detections")
     s.add_argument("--n", type=int, default=24); s.add_argument("--seed", type=int, default=1); s.add_argument("--days", type=float, default=14)
-    s.add_argument("--buoy", default="KEIKO-01"); s.add_argument("--replace", action="store_true", help="drop existing synthetic rows first")
+    s.add_argument("--site", help="demo site from data/sites.json: charles (default) or harbor")
+    s.add_argument("--replace", action="store_true", help="drop this site's existing synthetic rows (and their clips) first")
     s.set_defaults(fn=cmd_synth)
     a = p.parse_args(); a.fn(a)
 

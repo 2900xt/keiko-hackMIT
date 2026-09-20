@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import { offsetFrom, RANGE_M, type Detection } from "@/lib/detections";
 import { drawThumb, wavUrl, yPct } from "@/lib/dsp";
+import { SITES } from "@/lib/sites";
 import type { Player } from "./DatabaseView";
 
 interface Props {
@@ -15,6 +16,8 @@ interface Props {
 const Y_TICKS: [number, string][] = [[1000, "1 kHz"], [500, "500"], [250, "250"], [100, "100"], [0, "0"]];
 const GRID_HZ = [500, 250, 100];
 const SW = 600, SH = 200;
+// Classes of the Charles fine-tune (motorboat, crew shell, ...): not whales, so the detail says which head labelled them.
+const RIVER_CLASSES = new Set(Object.values(SITES).filter((s) => s.soundscape === "river").flatMap((s) => s.classes));
 
 // One detection, in full: a native <dialog> (Escape closes, focus is trapped
 // and returned to the row), the spectrogram at readable size, the clip, and
@@ -111,7 +114,7 @@ export default function DetectionDetail({ d, origin, player, index, count, onSte
         <div>
           <dt className="eyebrow">Species</dt>
           <dd className={d.species && d.species !== "unknown" ? "species" : ""}>{d.species && d.species !== "unknown" ? d.species : "unknown"}
-            {d.species && d.species !== "unknown" && <span className="sub">whale CNN v2 · 22 classes</span>}</dd>
+            {d.species && d.species !== "unknown" && <span className="sub">{RIVER_CLASSES.has(d.species) ? "whale CNN v2 · Charles fine-tune" : "whale CNN v2 · 22 classes"}</span>}</dd>
         </div>
         <div>
           <dt className="eyebrow">Confidence</dt>

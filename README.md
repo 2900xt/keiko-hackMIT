@@ -1,40 +1,58 @@
-# Keiko — HackMIT 2026
+<div align="center">
 
-Hydrophones in Boston Harbor that turn underwater sound into a live, searchable stream of what's happening on the
-water: whale species, where they are, how the soundscape is drifting, and an alert when a right whale is heard.
-Built by [Moby Labs](https://github.com/2900xt) at HackMIT 2026.
+# 🐋 Keiko
 
-**Live site:** <https://2900xt.github.io/keiko-hackMIT/> · **Team:** Taha Rawjani ([@2900xt](https://github.com/2900xt)) · Matthew Li ([@Mallhw](https://github.com/Mallhw))
+**Hydrophones in Boston Harbor that turn underwater sound into a live, searchable stream of what's happening on the water** — whale species, where they are, how the soundscape is drifting, and an alert when a right whale is heard.
 
+[![Live site](https://img.shields.io/badge/live%20site-2900xt.github.io%2Fkeiko--hackMIT-0b7285?logo=github)](https://2900xt.github.io/keiko-hackMIT/)
+[![HackMIT 2026](https://img.shields.io/badge/HackMIT-2026-c92a2a)](https://hackmit.org)
+[![Detections](https://img.shields.io/badge/detections-CSV-495057)](https://raw.githubusercontent.com/2900xt/keiko-hackMIT/main/site/data/detections.csv)
+
+Built by [Moby Labs](https://github.com/2900xt) · Taha Rawjani ([@2900xt](https://github.com/2900xt)) · Matthew Li ([@Mallhw](https://github.com/Mallhw))
+
+</div>
+
+---
+
+```mermaid
+flowchart LR
+    subgraph nodes["Nodes  ·  piezo hydrophone → ADC → UDP"]
+        direction TB
+        UNOQ["Arduino UNO Q<br/>STM32U585 → Bridge → Linux<br/>3.3 kHz · 14-bit"]
+        ESP["ESP32-S3 DevKitC-1<br/>hw-timer ISR → USB-CDC / Wi-Fi<br/>8 kHz · 12-bit"]
+        NRF["nRF7002 DK<br/>nRF5340 SAADC → nRF70 Wi-Fi<br/>8.2 kHz · 12-bit"]
+    end
+
+    nodes -- "KEIK datagrams :5005" --> PIPE
+
+    PIPE["pipeline/keiko_pipeline.py<br/>3 s windows @ 1.5 s hop → whale CNN v2 (22 classes)<br/>→ abstain rule → event = run of whale windows"]
+
+    PIPE -- always --> OUT["pipeline/out/<br/>WAV clips + events.jsonl"]
+    PIPE -- "--archive" --> SITE["site/data/<br/>clip + spectrogram + CSV/JSON<br/>→ GitHub Pages"]
+    PIPE -- "--server" --> SRV["server/keiko_server.py<br/>TDOA fix + tracks<br/>→ WebSocket → Live map"]
+    PIPE -- "--elastic" --> ES["Elasticsearch<br/>keiko-windows · keiko-detections<br/>geo_point · 512-d vector · ELSER · ML anomaly"]
+
+    ES --> KIB["Kibana dashboard<br/>ES|QL alert → Discord/Slack<br/>ask.py (Claude ⇄ ES|QL / kNN / ELSER)"]
 ```
-                        ┌─ Arduino UNO Q  (STM32U585 MCU → Bridge → Linux/Python)  3.3 kHz, 14-bit ─┐
- piezo hydrophones ──── ├─ ESP32-S3 DevKitC-1 (hw-timer ISR → USB-CDC or Wi-Fi)    8 kHz,   12-bit ─┼─ UDP "KEIK" datagrams :5005
-                        └─ nRF7002 DK (nRF5340 SAADC → nRF70 Wi-Fi)                8.2 kHz, 12-bit ─┘
-                                                                                                     │
-        ┌────────────────────────────────────────────────────────────────────────────────────────────┘
-        ▼
- pipeline/keiko_pipeline.py     3 s windows @ 1.5 s hop ─► whale CNN v2 (22 classes) ─► abstain rule ─► event = run of whale windows
-        │                                                                                        │
-        ├─► pipeline/out/<id>.wav + events.jsonl                (always)                          │
-        ├─► site/data/  clip + spectrogram + CSV/JSON row       (--archive)  ─► GitHub Pages      │
-        ├─► server/keiko_server.py  TDOA fix + tracks ─► WebSocket ─► site Live tab   (--server)  │
-        └─► Elasticsearch  keiko-windows / keiko-detections     (--elastic)                       │
-                 │  geo_point · 512-d dense_vector (cosine) · semantic_text (ELSER) · ML anomaly job
-                 └─► Kibana dashboard · ES|QL alert rule → Discord/Slack · ask.py (Claude ⇄ ES|QL / kNN / ELSER)
 
- training/   dataset (126k clips, 9 sources) ─► whale CNN v2 (laptop) ─► Voloridge AWS GPU (width 64, 5 seeds, Charles fine-tune)
-             NOAA ISD (s3://noaa-isd-pds, Voloridge) ⋈ buoy noise floor ─► "how much of the underwater background is weather?"
+```mermaid
+flowchart LR
+    DS["training/dataset<br/>126k clips · 9 sources"] --> CNN["whale CNN v2<br/>(laptop, width 32)"]
+    CNN --> VOLO["Voloridge AWS GPU<br/>width 64 · 5 seeds · Charles fine-tune"]
+    ISD["NOAA ISD<br/>s3://noaa-isd-pds"] --> JOIN["⋈ buoy noise floor<br/>how much of the background is weather?"]
 ```
 
 ## Table of contents
 
-- [How it works](#how-it-works)
-- [Sponsor integrations](#sponsor-integrations) — Arduino · Espressif · Nordic/Hackster · Elastic · Voloridge
-- [Wire protocols](#wire-protocols)
-- [Models](#models)
-- [Repository layout](#repository-layout)
-- [How to run](#how-to-run)
-- [Tests](#tests)
+| | |
+|---|---|
+| [How it works](#how-it-works) | capture → classify → fan out → ask |
+| [Sponsor integrations](#sponsor-integrations) | Arduino · Espressif · Nordic / Hackster · Elastic · Voloridge |
+| [Wire protocols](#wire-protocols) | `KEIK` · `KBLK` · WebSocket · detection database |
+| [Models](#models) | whale CNN v2 · Moby right-whale ensemble · location table |
+| [Repository layout](#repository-layout) | what lives where |
+| [How to run](#how-to-run) | no-hardware demo → full stack → each node → Elastic → Voloridge |
+| [Tests](#tests) | one command per subsystem |
 
 ## How it works
 
@@ -53,6 +71,14 @@ Built by [Moby Labs](https://github.com/2900xt) at HackMIT 2026.
    generated descriptions, an ML anomaly job on the soundscape, and `ask.py` — a Claude agent that writes and runs ES|QL.
 
 ## Sponsor integrations
+
+| Sponsor | Track | What we built | Where |
+|---|---|---|---|
+| **Arduino** | Touch Grass | UNO Q node — the one that went in the water. Zephyr MCU sampler → Bridge → Linux Python forwarder, hot-reloadable config, USB relay | [`firmware/unoq/`](firmware/unoq/) |
+| **Espressif** | Best Use of Espressif Hardware | ESP32-S3 wideband node, USB-CDC `KBLK` frames or standalone Wi-Fi `KEIK`; parametric buoy hull | [`firmware/esp32-s3/`](firmware/esp32-s3/) |
+| **Nordic** | Hackster "Create What's Next" | nRF7002 DK node — sampler + Wi-Fi entirely on the nRF5340, Kconfig-driven, host simulator | [`firmware/nrf7002/`](firmware/nrf7002/) |
+| **Elastic** | Find the Signal | Two indices (geo, dense_vector, ELSER), ES\|QL library, kNN + semantic search, ML anomaly job, alert rule, Claude ⇄ ES\|QL agent | [`elastic/`](elastic/) |
+| **Voloridge** | Signal in the Noise | GPU training runs on their AWS + NOAA ISD ⋈ hydrophone noise-floor analysis | [`training/voloridge/`](training/voloridge/) |
 
 <details>
 <summary><b>Arduino — UNO Q</b> (Touch Grass) · <code>firmware/unoq/</code></summary>
@@ -78,8 +104,11 @@ The UNO Q is the node we actually ran in the water. It is two computers on one b
 - **USB fallback for the audio.** Venue Wi-Fi isolates clients, and adb cannot forward UDP, so `pipeline/usb_relay.py`
   wraps each datagram in a length prefix on the board, sends it down `adb reverse tcp:5006`, and unwraps it onto UDP on the
   laptop (`VIA=usb make live`). ~7 kB/s, no drops.
-- **Limit.** The Bridge UART runs at 115200 baud (~11 kB/s), which caps 16-bit audio at ~3.3 kHz (Nyquist 1.67 kHz): fine for
-  baleen whales and boats, not dolphin clicks — hence the two wideband nodes below.
+
+> [!WARNING]
+> The Bridge UART runs at 115200 baud (~11 kB/s), which caps 16-bit audio at ~3.3 kHz (Nyquist 1.67 kHz): fine for
+> baleen whales and boats, not dolphin clicks — hence the two wideband nodes below. Also: the front end is **3.3 V, not
+> 5 V tolerant**, and app restarts re-flash the MCU over SWD and have wedged the board's router — prefer `make retarget`.
 
 </details>
 
@@ -171,8 +200,9 @@ each clip for the embedding.
   (`esql`, `similar_sounds`, `semantic_search`); it writes the query, runs it, and answers. Guarded to read-only `FROM keiko-*`
   queries. `-v` prints every query it tries.
 
-Without ML nodes (`setup.py --no-elser --no-ml`) `description` degrades to `text` and `--semantic` to a `match` query.
-Unit + integration tests: `test_elastic.py`.
+> [!TIP]
+> Without ML nodes (`setup.py --no-elser --no-ml`) `description` degrades to `text` and `--semantic` to a `match` query.
+> Unit + integration tests: `test_elastic.py`.
 
 </details>
 
@@ -199,10 +229,13 @@ pressure, precip hourly. The question: how much of the underwater background is 
   through the instance's `AmazonS3ReadOnlyAccess` role + S3 gateway endpoint) to pull the station's years from `s3://noaa-isd-pds`.
 - `data/parse_isd.py` parses the fixed-width records — mandatory section (wind dir/speed, temp, dew point, SLP, visibility) +
   the `AA1` precipitation group — drops rows with failing QC codes, resamples to the hour.
-- **Archive lag found on 2026-09-20:** the public ISD archive (S3 and NCEI) ends 2025-08-27 for Logan and has no 2026 prefix.
-  ISD is the archive of the ASOS/METAR reports the NWS API serves live, so `data/fetch_nws.py` pulls
-  `api.weather.gov/stations/KBOS/observations` for the recording window, maps it onto the same columns, and merges with a
-  `source` column (`isd` / `nws`) — same instrument, same station, hours old instead of a year.
+
+> [!NOTE]
+> **Archive lag found on 2026-09-20:** the public ISD archive (S3 and NCEI) ends 2025-08-27 for Logan and has no 2026 prefix.
+> ISD is the archive of the ASOS/METAR reports the NWS API serves live, so `data/fetch_nws.py` pulls
+> `api.weather.gov/stations/KBOS/observations` for the recording window, maps it onto the same columns, and merges with a
+> `source` column (`isd` / `nws`) — same instrument, same station, hours old instead of a year.
+
 - `analysis/noise_floor.py` computes the 30th-percentile band level in 10–1000 Hz per recording (the same `floor` statistic
   the live pipeline reports) and buckets it hourly UTC; `analysis/join_isd.py` inner-joins on the hour and reports Spearman
   correlation of floor vs wind speed, precip, and pressure tendency, plus a partial residual after removing the diurnal
@@ -218,11 +251,19 @@ pressure, precip hourly. The question: how much of the underwater background is 
 <details>
 <summary><b>KEIK</b> — node → pipeline UDP datagram (all three nodes)</summary>
 
-One datagram per block, little-endian, 26-byte header:
+One datagram per block, little-endian, 26-byte header followed by `n × int16` samples:
 
-```
-magic 4s "KEIK" | ver B 1 | node B | fmt B 0=int16 raw ADC | bits B | fs f Hz | seq I | t_ns Q | n H | n×int16
-```
+| field | type | value |
+|---|---|---|
+| `magic` | `4s` | `"KEIK"` |
+| `ver` | `B` | `1` |
+| `node` | `B` | 0 = UNO Q, 1 = ESP32-S3 / nRF7002 |
+| `fmt` | `B` | `0` = int16 raw ADC |
+| `bits` | `B` | ADC resolution: 14 / 12 / 12 |
+| `fs` | `f` | sample rate in Hz, **measured** by the sender |
+| `seq` | `I` | block sequence number |
+| `t_ns` | `Q` | timestamp, ns |
+| `n` | `H` | samples in this block (256) |
 
 `node`: 0 = UNO Q, 1 = ESP32-S3 / nRF7002 (`KEIKO_NODE_ID`). `bits`: 14 / 12 / 12. `fs` is *measured* by the sender from MCU
 timestamps, so the receiver never needs the nominal period. `t_ns` is host arrival time on the UNO Q and node uptime on the
@@ -234,9 +275,15 @@ step). The pipeline keys streams by `node`, detects gaps from `seq`, and reports
 <details>
 <summary><b>KBLK</b> — ESP32-S3 → laptop serial frame (USB mode only)</summary>
 
-```
-magic 4s "KBLK" | seq I | t0_us I | dropped I | n H | n×int16 raw ADC 0..4095 | crc H (CRC-16/CCITT-FALSE over everything before it)
-```
+| field | type | value |
+|---|---|---|
+| `magic` | `4s` | `"KBLK"` |
+| `seq` | `I` | frame sequence number |
+| `t0_us` | `I` | first-sample time, µs |
+| `dropped` | `I` | blocks dropped so far |
+| `n` | `H` | samples in frame |
+| samples | `n × int16` | raw ADC 0..4095 |
+| `crc` | `H` | CRC-16/CCITT-FALSE over everything before it |
 
 Resynchronised on the magic if a byte is lost; `python/main.py` re-emits each valid frame as a `KEIK` datagram with `bits=12`.
 
@@ -339,6 +386,9 @@ hydrophones, ecotype labels), and the AAD Antarctic blue/fin library (77,080 cal
 
 ## How to run
 
+> [!TIP]
+> **Fastest path to a whale on screen:** `cd pipeline && make venv && make test && make demo` — no hardware, no cloud.
+
 All Python except the firmware-local venvs uses one repo venv at `.venv/` (torch, librosa, soundfile, scipy, …, ~2 GB):
 
 ```bash
@@ -379,6 +429,10 @@ cd pipeline && make demo ARGS="--server ws://127.0.0.1:8765"
 
 The Live tab falls back to a synthetic feed after 4 s without a server and switches to the real one when it appears. The
 static build (GitHub Pages) has no server; set `NEXT_PUBLIC_KEIKO_WS` at build time to point a deployed site at one.
+
+The **Ask** button (bottom right) is a chat over the Elasticsearch data: `elastic/ask_server.py` (`http://localhost:8766`)
+runs `ask.py`'s Claude ⇄ ES|QL / kNN / ELSER loop per question. Same deal as the WebSocket: `NEXT_PUBLIC_KEIKO_ASK`
+points a deployed site at one, and the button is hidden when it is unset.
 
 </details>
 
@@ -535,3 +589,9 @@ Push to `main` touching `site/**` runs `.github/workflows/pages.yml`: `npm ci &&
 | nRF7002 packet layout via the simulator | `cd firmware/nrf7002 && make test` |
 | firmware compile checks without a board | `make check` (unoq, esp32-s3) · `make build` (nrf7002) |
 | site types | `cd site && npm run typecheck` |
+
+---
+
+<div align="center">
+<sub>Keiko · HackMIT 2026 · <a href="https://2900xt.github.io/keiko-hackMIT/">live site</a> · <a href="site/data/">detection database</a></sub>
+</div>

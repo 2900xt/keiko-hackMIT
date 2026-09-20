@@ -78,8 +78,15 @@ export default function MapView({ buoyId, position, detections, hoveredId, focus
   }, []);
 
   useEffect(() => {
+    const m = map.current;
     buoy.current?.setLatLng([position.lat, position.lon]);
     range.current?.setLatLng([position.lat, position.lon]);
+    // The buoy moved somewhere else entirely (the demo site changed, or a server at another site connected):
+    // jump there and let the array fit happen again once the other buoys arrive.
+    if (m && m.getCenter().distanceTo([position.lat, position.lon]) > 2000) {
+      fitted.current = false; pendingFit.current = null;
+      m.setView([position.lat, position.lon], 15);
+    }
   }, [position.lat, position.lon]);
 
   // The rest of the array. Simulated buoys are drawn hollow and say so; the

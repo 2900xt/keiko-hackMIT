@@ -6,7 +6,7 @@
    Spacing is on a 4 px grid. Elevation is hairline borders; nothing floats
    except tooltips, which sit on --paper-3 with a border and no shadow.
    z-index scale: 1–2 inside an isolated component, 10 map chrome,
-   20 tooltips, 100 skip link; the detail overlay is a native <dialog> on the
+   20 tooltips, 30 the Ask panel, 100 skip link; the detail overlay is a native <dialog> on the
    top layer. Nothing else. */
 :root {
   color-scheme: dark;
@@ -208,6 +208,8 @@ main:focus { outline: none; }
 .chip { min-height: 32px; font-size: var(--fs-sm); padding: 4px 12px; border-radius: 999px; border: 1px solid var(--rule-strong); background: transparent; color: var(--ink-2); cursor: pointer; transition: color var(--t-fast) var(--ease-out), border-color var(--t-fast) var(--ease-out), background-color var(--t-fast) var(--ease-out); }
 .chip:hover { color: var(--ink); border-color: var(--ink-3); }
 .chip:active { background: var(--paper-2); }
+.chip-sm { min-height: 26px; padding: 2px 10px; font-size: var(--fs-xs); }
+.site-pick { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 14px; }
 .chip[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
 
 .table-scroll { overflow-x: auto; }
@@ -317,6 +319,41 @@ kbd { font-family: var(--mono); font-size: var(--fs-xs); padding: 1px 5px; borde
   .detail-facts { grid-template-columns: repeat(2, 1fr); padding-left: 16px; padding-right: 16px; }
   .detail-nav .hint { display: none; }
 }
+
+/* ---------- ask (chat over the app) ---------- */
+.ask { position: fixed; right: 16px; bottom: 16px; z-index: 30; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+.ask-fab { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 8px 16px; border-radius: 20px; background: var(--accent); color: var(--accent-ink); border: 1px solid var(--accent); font-size: var(--fs-sm); font-weight: 600; cursor: pointer; box-shadow: 0 8px 24px rgba(0, 4, 10, .45); transition: background-color var(--t-fast) var(--ease-out); }
+.ask-fab:hover { background: var(--accent-strong); border-color: var(--accent-strong); }
+.ask-fab.open { background: var(--paper-3); color: var(--ink); border-color: var(--rule-strong); }
+.ask-panel { display: flex; flex-direction: column; width: 380px; height: min(560px, calc(100vh - 88px)); border-radius: 6px; border: 1px solid rgba(43, 68, 89, .8); background: var(--glass); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); box-shadow: 0 12px 32px rgba(0, 4, 10, .5); overflow: hidden; }
+.ask-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 14px 16px 12px; border-bottom: 1px solid var(--rule); }
+.ask-head .meta { margin-top: 2px; }
+.ask-log { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; }
+.ask-msg { max-width: 88%; padding: 8px 12px; border-radius: 10px; font-size: var(--fs-sm); line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ask-msg.user { align-self: flex-end; background: var(--accent-soft); color: var(--ink); border-bottom-right-radius: 3px; }
+.ask-msg.bot { align-self: flex-start; background: var(--paper-2); color: var(--ink); border-bottom-left-radius: 3px; }
+.ask-msg.error { color: var(--bad); }
+.ask-msg code { font-family: var(--mono); font-size: var(--fs-xs); background: var(--paper-3); padding: 1px 4px; border-radius: 3px; }
+.ask-busy { display: inline-flex; gap: 4px; padding: 12px 14px; }
+.ask-busy i { width: 6px; height: 6px; border-radius: 50%; background: var(--ink-3); animation: ask-dot 1.2s infinite; }
+.ask-busy i:nth-child(2) { animation-delay: .2s; }
+.ask-busy i:nth-child(3) { animation-delay: .4s; }
+@keyframes ask-dot { 0%, 60%, 100% { opacity: .3; } 30% { opacity: 1; } }
+.ask-starters { display: flex; flex-direction: column; gap: 6px; }
+.ask-starter { text-align: left; padding: 8px 12px; border-radius: var(--radius); background: transparent; color: var(--ink-2); border: 1px solid var(--rule-strong); font-size: var(--fs-sm); cursor: pointer; transition: background-color var(--t-fast) var(--ease-out), color var(--t-fast) var(--ease-out); }
+.ask-starter:hover { background: var(--paper-2); color: var(--ink); }
+.ask-offline { margin: 0; padding: 8px 12px; border-radius: var(--radius); border: 1px solid var(--warn); color: var(--warn); font-size: var(--fs-sm); }
+.ask-offline code { font-family: var(--mono); font-size: var(--fs-xs); }
+.ask-form { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--rule); }
+.ask-input { flex: 1; min-width: 0; min-height: 36px; padding: 6px 10px; border-radius: var(--radius); border: 1px solid var(--rule-strong); background: var(--paper); color: var(--ink); font: inherit; font-size: var(--fs-sm); }
+.ask-input:focus-visible { outline: 2px solid var(--accent); outline-offset: 0; border-color: var(--accent); }
+.ask-input::placeholder { color: var(--ink-3); }
+.ask-form .btn:disabled { opacity: .5; cursor: default; }
+@media (max-width: 960px) {
+  .ask { right: 8px; bottom: 8px; left: 8px; align-items: flex-end; }
+  .ask-panel { width: 100%; height: min(520px, calc(100vh - 72px)); }
+}
+@media (prefers-reduced-motion: reduce) { .ask-busy i { animation: none; opacity: .6; } .ask-fab, .ask-starter { transition: none; } }
 
 /* ---------- landing ---------- */
 .landing { font-family: var(--font-display), var(--font); position: relative; flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 48px 28px; }

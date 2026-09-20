@@ -3,7 +3,9 @@
 and streams everything to the website over one WebSocket.
 
     python3 keiko_server.py                 # ws://0.0.0.0:8765  (the site's Live tab connects here in dev)
-    python3 keiko_server.py --inject        # no pipeline: push a fake humpback every 8 s to exercise the map
+    python3 keiko_server.py --site harbor   # the buoy array in Boston Harbor instead of the Charles (site/data/sites.json)
+    python3 keiko_server.py --inject        # no pipeline: push a fake detection every 8 s to exercise the map
+                                            # (a humpback in the harbor; a motorboat or crew shell on the Charles)
 
 Clients say who they are in their first message: {"role": "node"} is the pipeline (see keiko_pipeline.py
 --server), anything else is a browser. Node messages are JSON with a "type":
@@ -24,7 +26,7 @@ Browsers receive, besides the four above (detection with a "fix" attached):
     track      {id, species, points:[{ts,lat,lon}], ...}  after each detection
     hello      {server, buoys, tracks}                  on connect
 """
-import argparse, asyncio, json, math, random, signal, sys, time
+import argparse, asyncio, json, math, pathlib, random, signal, sys, time
 from datetime import datetime, timezone
 
 import websockets
@@ -32,10 +34,31 @@ import websockets
 C_WATER = 1480.0          # m/s
 JITTER_S = 0.002          # simulated timing error per virtual buoy
 TRACK_GAP_S = 600         # a detection joins the last track of its species if it is this recent
-RIVER_BEARING = 90.0      # President Roads (Boston Harbor) runs E-W between Deer Island and Long Island
-RIVER_HALF_LEN, ACROSS_MIN, ACROSS_MAX = 400.0, 15.0, 150.0   # metres, the box the source walks in (between the islands)
+ACROSS_MIN, ACROSS_MAX = 15.0, 150.0   # metres from the real buoy's line toward the virtual pair: the box the source walks in
 
-REAL_BUOY = {"id": "KEIKO-01", "lat": 42.34000, "lon": -70.97000, "simulated": False}
+# Where the demo is set. site/data/sites.json is shared with the website (?site=) and tools/keiko_data.py synth --site;
+# --site picks the entry, and it fills in REAL_BUOY, the channel bearing and the half-length of the box the source walks in.
+SITES_JSON = pathlib.Path(__file__).resolve().parent.parent / "site" / "data" / "sites.json"
+SITE = None
+RIVER_BEARING = 60.0      # channel axis, degrees clockwise from north (set from the site)
+RIVER_HALF_LEN = 400.0
+REAL_BUOY = {"id": "KEIKO-01", "lat": 42.35720, "lon": -71.08680, "simulated": False}
+
+
+def load_site(key=None):
+    """Read sites.json and set the module's REAL_BUOY / channel geometry from the chosen site (default: the file's)."""
+    global SITE, RIVER_BEARING, RIVER_HALF_LEN, REAL_BUOY
+    cfg = json.loads(SITES_JSON.read_text())
+    key = key or cfg["default"]
+    if key not in cfg["sites"]:
+        sys.exit(f"unknown site {key!r}; sites.json has: {', '.join(cfg['sites'])}")
+    SITE = dict(cfg["sites"][key], key=key)
+    RIVER_BEARING = float(SITE["channel"]["bearing_deg"])
+    RIVER_HALF_LEN = float(SITE["channel"]["half_len_m"]) - 50.0     # keep the walk a little inside the site's box
+    REAL_BUOY = {"id": SITE["buoy"]["id"], "lat": float(SITE["buoy"]["lat"]), "lon": float(SITE["buoy"]["lon"]), "simulated": False}
+    return SITE
+
+
 # A triangle, not a line: the real buoy is the apex on this side of the channel, the virtual pair sits ~350 m up- and down-channel
 # on the far side, so TDOA hyperbolae cross at a usable angle anywhere in the box the source walks in.
 VIRTUAL_BUOYS = [
@@ -280,24 +303,34 @@ class Server:
             await asyncio.sleep(2)
 
     async def inject(self, every_s):
-        """Stand-in for the pipeline: a humpback detection every `every_s` seconds."""
+        """Stand-in for the pipeline: a detection every `every_s` seconds. What it is depends on the site's soundscape:
+        a humpback where whales are the story (the harbor), river traffic on the Charles (the fine-tune's classes)."""
+        river = SITE is not None and SITE.get("soundscape") == "river"
         n = 0
         while True:
             await asyncio.sleep(every_s)
             n += 1; now = time.time()
-            await self.on_detection({"type": "detection", "id": f"KEIKO-01-{datetime.fromtimestamp(now, timezone.utc).strftime('%Y%m%dT%H%M%S')}",
-                                     "ts": utc(now)[:19] + "Z", "buoy_id": "KEIKO-01", "species": "humpback whale",
-                                     "model_class": "Megaptera_novaeangliae", "confidence": round(random.uniform(0.7, 0.95), 2),
-                                     "duration_s": round(random.uniform(4, 12), 1), "f0": 300, "sweep": 0, "injected": True})
+            if river:
+                kind = random.choice(["motorboat", "motorboat", "crew shell"])
+                det = {"species": kind, "model_class": kind.replace(" ", "_"), "confidence": round(random.uniform(0.65, 0.95), 2),
+                       "duration_s": round(random.uniform(6, 16), 1), "f0": random.randint(60, 140), "sweep": 0}
+            else:
+                det = {"species": "humpback whale", "model_class": "Megaptera_novaeangliae", "confidence": round(random.uniform(0.7, 0.95), 2),
+                       "duration_s": round(random.uniform(4, 12), 1), "f0": 300, "sweep": 0}
+            await self.on_detection({"type": "detection", "id": f"{REAL_BUOY['id']}-{datetime.fromtimestamp(now, timezone.utc).strftime('%Y%m%dT%H%M%S')}",
+                                     "ts": utc(now)[:19] + "Z", "buoy_id": REAL_BUOY["id"], "injected": True, **det})
 
 
 async def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--host", default="0.0.0.0"); ap.add_argument("--port", type=int, default=8765)
     ap.add_argument("--inject", nargs="?", const=8.0, type=float, metavar="SECONDS", help="fake a detection every N s (default 8) for testing the map")
+    ap.add_argument("--site", metavar="KEY", help="demo site from site/data/sites.json: charles (default) or harbor")
     a = ap.parse_args()
+    site = load_site(a.site)
     srv = Server()
-    print(f"keiko server on ws://{a.host}:{a.port}  buoys: " + ", ".join(f"{b['id']}{' (simulated)' if b['simulated'] else ''}" for b in srv.buoys), flush=True)
+    print(f"keiko server on ws://{a.host}:{a.port}  site: {site['name']} ({site['place']})  buoys: "
+          + ", ".join(f"{b['id']}{' (simulated)' if b['simulated'] else ''}" for b in srv.buoys), flush=True)
     stop = asyncio.get_running_loop().create_future()
     for sig in (signal.SIGINT, signal.SIGTERM):
         asyncio.get_running_loop().add_signal_handler(sig, lambda: stop.done() or stop.set_result(None))

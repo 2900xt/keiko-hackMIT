@@ -27,6 +27,7 @@ soundscape is drifting, which windows are *unusual*, in plain English.
 | `setup.py` | provisions everything: templates, indices, ML job + datafeed, Kibana data views, ES\|QL alert rule (+ webhook) |
 | `backfill.py` | loads `pipeline/out/events.jsonl` + `site/data/detections.csv`, re-running the CNN on each clip |
 | `ask.py` | the agent (Claude ⇄ ES\|QL / kNN / ELSER tools) and the no-LLM `--esql` `--similar` `--semantic` `--anomalies` modes |
+| `ask_server.py` | HTTP front for `ask.py` (`POST /ask`), the website's "Ask Keiko" chat panel |
 | `queries.esql` | 11 ES\|QL queries: the dashboard panels and the demo questions |
 | `kibana/dashboard.md` | the six-panel dashboard recipe + alerting |
 | `test_elastic.py` | unit tests (docs, features, guard) + an integration round-trip against a real cluster |
@@ -70,7 +71,12 @@ Both also accept `--server ws://…` (the map) and `--archive` (the site) at the
 ../.venv/bin/python ask.py --semantic "long low tonal call at night"  # ELSER, no LLM
 ../.venv/bin/python ask.py --anomalies                                # ML job records
 ../.venv/bin/python ask.py --esql 'FROM keiko-windows | STATS n = COUNT(*), db = AVG(audio.rms_db) BY buoy_id'
+../.venv/bin/python ask_server.py -v      # the same agent behind http://localhost:8766/ask for the site's Ask panel
 ```
+
+`ask_server.py` is the website's chatbot: `POST /ask {question, session}` runs `ask()` and keeps one conversation per
+`session`, so follow-ups work. The site posts to `NEXT_PUBLIC_KEIKO_ASK` (`http://localhost:8766` in `npm run dev`; unset
+in the static build, which hides the button — set it at build time to a tunnel to this server for a deployed demo).
 
 `ask.py` gives Claude (`claude-opus-5`) the two index schemas and an ES|QL cheat sheet, and three tools. It only
 runs `FROM keiko-*` queries. `-v` prints every query it tries — good for the demo.
