@@ -102,6 +102,20 @@ tr = m.index[m.split == "train"].values
 x, y = X[tr[:256]].astype("float32")[:, None], m.label_id.values[tr[:256]]   # (256, 1, 128, 301)
 ```
 
+## Right whale tensors (Kaggle clips only)
+
+Two smaller feature files built straight from the Kaggle `whale-detection-challenge.zip` (30,000 labeled 2 s / 2 kHz clips,
+7,027 upcalls), no database needed. Both are one `.npz`, row i = `train{i+1}.aiff`, `y` = 1 for an upcall. Not in git.
+
+| File | Built by | Arrays |
+|---|---|---|
+| `features/cornell_2k_spec.npz` (971 MB) | `scripts/cornell_kaggle_to_tensor.py` | `X` uint8 (30000, 129, 251) grayscale log-power STFT (n_fft 256, hop 16), `y` int8 |
+| `features/moby_narw.npz` (832 MB) | `../moby/features.py` | `X2` float16 (30000, 103, 126) log-mel‖MFCC‖chroma‖contrast, `X1` float16 (30000, 7, 126) 1D features, `y` int8 |
+
+```bash
+python3 scripts/cornell_kaggle_to_tensor.py     # 13 s; expects ~/Downloads/whale-detection-challenge.zip, caches whale_data.zip in ~/.cache
+```
+
 ## Rebuild / extend
 
 ```bash

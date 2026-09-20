@@ -5,3 +5,4 @@ audio/
 *.tar.gz
 *.wav
 features/**/*.npy
+features/**/*.npz
