@@ -4,6 +4,7 @@
     python3 keiko_pipeline.py                      # listen on 0.0.0.0:5005 for node packets (see firmware/unoq/python/main.py)
     python3 keiko_pipeline.py --wav rec.wav        # same logic over a file, as fast as possible (offline test)
     python3 keiko_pipeline.py --archive            # also add each event to site/data (then commit that folder)
+    python3 keiko_pipeline.py --server ws://127.0.0.1:8765   # also stream to server/keiko_server.py (live map)
 
 Every --hop seconds the last --win seconds of audio are resampled to the model's 32 kHz, turned into the same
 log-mel window predict.py uses, and classified. A run of whale windows becomes one event; when it ends the clip
@@ -106,14 +107,66 @@ def logmel(y, fs, spec):
     return out
 
 
+# ---- link to the central server -----------------------------------------------
+class ServerLink:
+    """Best-effort WebSocket client for server/keiko_server.py: JSON messages out, reconnects on its own, never
+    blocks the audio loop for long (a send that fails drops the message and schedules a reconnect)."""
+
+    def __init__(self, url, buoy):
+        from websockets.sync.client import connect
+        self._connect, self.url, self.buoy = connect, url, buoy
+        self.ws = None; self.next_try = 0.0; self.sent = 0
+
+    def _open(self):
+        if self.ws or time.time() < self.next_try:
+            return
+        try:
+            self.ws = self._connect(self.url, open_timeout=2, close_timeout=1)
+            self.ws.send(json.dumps({"role": "node", "buoy": self.buoy}))
+            print(f"server: connected to {self.url}", flush=True)
+        except Exception as e:
+            self.ws = None; self.next_try = time.time() + 3
+            print(f"server: {self.url} unreachable ({e.__class__.__name__}), retrying", flush=True)
+
+    def send(self, msg):
+        self._open()
+        if not self.ws:
+            return
+        try:
+            self.ws.send(json.dumps(msg)); self.sent += 1
+        except Exception as e:
+            print(f"server: send failed ({e.__class__.__name__}), reconnecting", flush=True)
+            try: self.ws.close()
+            except Exception: pass
+            self.ws = None; self.next_try = time.time() + 1
+
+    def audio_frame(self, st, ts):
+        """The live strip's input: the newest 256 samples (oscilloscope) and 80 power bins 0-1 kHz from the last 0.25 s."""
+        y = st.last(0.25)
+        if y is None or st.fs <= 0:
+            return
+        n = len(y); win = np.hanning(n)
+        spec = np.abs(np.fft.rfft(y * win)) ** 2 / n
+        freqs = np.fft.rfftfreq(n, 1.0 / st.fs)
+        edges = np.linspace(0, 1000, 81)
+        idx = np.clip(np.searchsorted(edges, freqs, side="right") - 1, 0, 80)
+        bins = np.zeros(81); np.add.at(bins, idx, spec); bins = bins[:80]
+        db = 10 * np.log10(bins + 1e-12)
+        bins = np.clip((db + 90) / 60, 0, 1)                   # -90 dBFS .. -30 dBFS -> 0..1
+        rms = float(np.sqrt(np.mean(y[-256:] ** 2)) + 1e-9)
+        self.send({"type": "audio", "ts": ts, "samples": [round(float(v), 4) for v in y[-256:]],
+                   "bins": [round(float(v), 3) for v in bins], "level_db": round(20 * np.log10(rms), 1)})
+
+
 # ---- events -----------------------------------------------------------------
 class Detector:
     def __init__(self, a, model, classes, spec, buoy):
         self.a, self.model, self.classes, self.spec, self.buoy = a, model, classes, spec, buoy
         self.win_hist = collections.deque(maxlen=64)  # (t_end, label, conf, is_whale)
         self.event = None
-        self.n_windows = 0
+        self.n_windows = 0; self.t_start = time.time()
         self.out = pathlib.Path(a.out); self.out.mkdir(parents=True, exist_ok=True)
+        self.link = ServerLink(a.server, buoy["id"]) if a.server else None
         self.keiko_data = None
         if a.archive:
             p = REPO / "site" / "tools" / "keiko_data.py"
@@ -139,6 +192,9 @@ class Detector:
         if not self.a.quiet:
             print(f"{utc(t_end)}  {'WHALE ' if whale else '      '}{label:28s} {conf:.2f}   (top {top} {ptop:.2f})", flush=True)
         self.win_hist.append((t_end, label, conf, whale))
+        if self.link:
+            self.link.send({"type": "window", "ts": utc(t_end), "label": label, "species": COMMON.get(label, label) if whale else None,
+                            "conf": round(conf, 3), "whale": whale, "top": top, "top_p": round(ptop, 3), "in_event": self.event is not None})
 
         ev = self.event
         if ev is None:
@@ -183,6 +239,10 @@ class Detector:
         with open(self.out / "events.jsonl", "a") as f:
             f.write(json.dumps(rec) + "\n")
         print(f"EVENT {det_id}  {rec['species']}  conf={conf:.2f}  {rec['duration_s']} s  -> {wav}", flush=True)
+        if self.link:
+            self.link.send({"type": "detection", "id": det_id, "ts": when, "buoy_id": self.buoy["id"], "lat": self.buoy["lat"],
+                            "lon": self.buoy["lon"], "species": rec["species"], "model_class": species, "confidence": rec["confidence"],
+                            "duration_s": rec["duration_s"], "windows": rec["windows"], "f0": 0, "sweep": 0})
         if self.keiko_data:
             ns = argparse.Namespace(wav=str(wav), buoy=self.buoy["id"], time=when, lat=self.buoy["lat"], lon=self.buoy["lon"],
                                     confidence=conf, species=rec["species"], id=det_id, source=self.a.source,
@@ -195,7 +255,13 @@ def run_udp(a, det, streams):
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM); s.bind((a.host, a.port)); s.settimeout(1.0)
     print(f"listening on udp {a.host}:{a.port}", flush=True)
     next_step = {}; seen = set(); quiet_since = time.time(); hinted = 0
+    link = det.link; next_tel = 0.0; next_frame = 0.0; pkts = 0
     while True:
+        if link and time.time() >= next_tel:
+            next_tel = time.time() + 2
+            fs = next((s_.fs for s_ in streams.values()), 0)
+            link.send({"type": "telemetry", "id": det.buoy["id"], "ts": utc(), "lat": det.buoy["lat"], "lon": det.buoy["lon"],
+                       "sample_rate_hz": int(round(fs)), "packets": pkts, "windows": det.n_windows, "uptime_s": int(time.time() - det.t_start)})
         try:
             data, addr = s.recvfrom(65536)
         except socket.timeout:
@@ -218,7 +284,10 @@ def run_udp(a, det, streams):
         raw = np.frombuffer(data[HDR.size:HDR.size + 2 * n], dtype="<i2")
         st = streams.setdefault(node, Stream())
         now = time.time()
-        st.push(raw, bits, fs, now)
+        st.push(raw, bits, fs, now); pkts += 1
+        if link and now >= next_frame:
+            next_frame = now + 1 / 15
+            link.audio_frame(st, utc(now))
         if now >= next_step.get(node, 0):
             next_step[node] = now + a.hop
             det.step(st, now)
@@ -269,6 +338,7 @@ def main():
     ap.add_argument("--archive", action="store_true", help="add events to site/data via keiko_data.py")
     ap.add_argument("--source", default="field", choices=["field", "synthetic"], help="source column for --archive (use synthetic for replays/tests)")
     ap.add_argument("--quiet", action="store_true", help="only print events")
+    ap.add_argument("--server", metavar="WS_URL", help="stream windows, audio and events to server/keiko_server.py, e.g. ws://127.0.0.1:8765")
     a = ap.parse_args()
 
     model, classes, spec = load_model(a.model)

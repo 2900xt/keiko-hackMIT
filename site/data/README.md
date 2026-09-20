@@ -41,7 +41,7 @@ df = pd.read_csv(base + "detections.csv")
 ```sh
 pip install -r ../tools/requirements.txt
 python3 ../tools/keiko_data.py add --wav call.wav --buoy KEIKO-01 \
-    --time 2026-09-20T14:03:11Z --lat 42.3572 --lon -71.0868 --confidence 0.87 --species humpback
+    --time 2026-09-20T14:03:11Z --lat 42.33 --lon -70.28 --confidence 0.87 --species humpback
 ```
 
 That copies the clip, renders its spectrogram, appends the CSV row, and regenerates the JSON. Commit the result. If you edit the CSV by hand, run `python3 ../tools/keiko_data.py rebuild` afterwards.

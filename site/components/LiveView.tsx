@@ -59,7 +59,7 @@ export default function LiveView({ feed, active, now, buoyId, position, telemetr
           {feed.synthetic && (
             <p className="notice">
               <b>Simulated feed.</b>
-              <span>Telemetry, audio and calls are generated in the browser, not recorded on the river.</span>
+              <span>Telemetry, audio and calls are generated in the browser, not recorded at sea.</span>
             </p>
           )}
           <dl className="kv">

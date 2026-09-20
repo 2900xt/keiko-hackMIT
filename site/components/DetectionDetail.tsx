@@ -50,7 +50,7 @@ export default function DetectionDetail({ d, origin, player, index, count, onSte
   const playing = player.playing === src;
   const secs = d.duration_s.toFixed(1);
   const pct = Math.round(d.confidence * 100);
-  // Archived PNGs cover the clip exactly; a live call is drawn with half a second of river either side.
+  // Archived PNGs cover the clip exactly; a live call is drawn with half a second of sea either side.
   const padded = !d.spectrogram, span = padded ? d.duration_s + 1 : d.duration_s;
 
   return (

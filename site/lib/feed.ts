@@ -33,8 +33,8 @@ export interface Feed {
 const rand = (a: number, b: number) => a + Math.random() * (b - a);
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
-// Charles River basin, just off the MIT Sailing Pavilion.
-export const BUOY: Buoy = { id: "KEIKO-01", lat: 42.3572, lon: -71.0868 };
+// Stellwagen Bank, Massachusetts Bay: ~25 nmi east of Boston, where the whales are.
+export const BUOY: Buoy = { id: "KEIKO-01", lat: 42.33, lon: -70.28 };
 const NSAMP = 256, NBINS = 80;
 
 interface Call { f0: number; sweep: number; amp: number; t0: number; t1: number }
@@ -94,13 +94,11 @@ export function createFeed(): Feed {
   }
 
   let seq = 0;
-  // Position the sighting near the buoy but inside the river: the Charles runs
-  // roughly NE–SW here (bearing 60°), ~500 m wide, so spread along the axis
-  // and keep the across-axis offset small.
+  // Position the sighting uniformly within 450 m of the buoy: open water, no
+  // shoreline to stay inside of.
   function place() {
-    const along = rand(-450, 450), across = rand(-110, 110); // metres
-    const ax = Math.sin(60 * Math.PI / 180), ay = Math.cos(60 * Math.PI / 180);
-    const east = along * ax + across * ay, north = along * ay - across * ax;
+    const r = 450 * Math.sqrt(Math.random()), a = rand(0, 2 * Math.PI); // metres, radians
+    const east = r * Math.sin(a), north = r * Math.cos(a);
     return {
       lat: +(BUOY.lat + north / 111320).toFixed(5),
       lon: +(BUOY.lon + east / (111320 * Math.cos(BUOY.lat * Math.PI / 180))).toFixed(5),

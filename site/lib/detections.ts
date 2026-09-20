@@ -87,7 +87,7 @@ export function median(xs: number[]): number | null {
 }
 
 // "140 m NE of buoy": where a detection sits relative to a buoy, for readers
-// who cannot place a coordinate pair on the river by eye.
+// who cannot place a coordinate pair on the water by eye.
 export function offsetFrom(origin: { lat: number; lon: number }, p: { lat: number; lon: number }) {
   const north = (p.lat - origin.lat) * 111320;
   const east = (p.lon - origin.lon) * 111320 * Math.cos(origin.lat * Math.PI / 180);

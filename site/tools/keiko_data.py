@@ -17,7 +17,7 @@ Commands
 
 Examples
   python3 tools/keiko_data.py add --wav call.wav --buoy KEIKO-01 \
-      --time 2026-09-20T14:03:11Z --lat 42.3572 --lon -71.0868 --confidence 0.87
+      --time 2026-09-20T14:03:11Z --lat 42.33 --lon -70.28 --confidence 0.87
   python3 tools/keiko_data.py rebuild
   python3 tools/keiko_data.py synth --n 24 --seed 1
 """
@@ -169,7 +169,7 @@ def cmd_rebuild(a):
 
 
 def cmd_synth(a):
-    """Synthetic calls: noise floor + frequency sweep under a sine envelope, near the buoy in the river."""
+    """Synthetic calls: noise floor + frequency sweep under a sine envelope, near the buoy in open water."""
     import numpy as np
     rng = random.Random(a.seed)
     buoys = read_buoys()
@@ -188,10 +188,9 @@ def cmd_synth(a):
         x = (np.random.default_rng(rng.getrandbits(32)).uniform(-0.5, 0.5, n) * 0.12 + env * np.sin(phase)).astype("float32")
         clip = ROOT / "clips" / f"{det_id}.wav"; png = ROOT / "spectrograms" / f"{det_id}.png"
         write_wav(clip, sr, x); render_spectrogram(clip, png)
-        # position: along the river axis (bearing 60°), small across-axis spread
-        along, across = rng.uniform(-450, 450), rng.uniform(-110, 110)
-        ax, ay = math.sin(math.radians(60)), math.cos(math.radians(60))
-        east, north = along * ax + across * ay, along * ay - across * ax
+        # position: uniform within 450 m of the buoy (open water, no shoreline)
+        r, ang = 450 * math.sqrt(rng.random()), rng.uniform(0, 2 * math.pi)
+        east, north = r * math.sin(ang), r * math.cos(ang)
         lat = blat + north / 111320; lon = blon + east / (111320 * math.cos(math.radians(blat)))
         rows.append({
             "id": det_id, "buoy_id": a.buoy, "timestamp_utc": ts.strftime("%Y-%m-%dT%H:%M:%SZ"),

@@ -1,6 +1,6 @@
 # Keiko — HackMIT 2026
 
-Hydrophones on the Charles River that turn underwater sound into a live, searchable stream of what's happening on the water. Built by [Moby Labs](https://github.com/2900xt) at HackMIT 2026.
+Hydrophones in Massachusetts Bay that turn underwater sound into a live, searchable stream of what's happening on the water. Built by [Moby Labs](https://github.com/2900xt) at HackMIT 2026.
 
 ```
 hydrophone A ──> nRF7002 DK ─────┐  (SAADC → UDP/Wi-Fi)
