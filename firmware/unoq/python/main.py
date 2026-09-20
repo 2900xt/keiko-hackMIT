@@ -13,7 +13,8 @@ is missing it falls back to talking MessagePack-RPC to the router socket directl
 
 Configuration (environment variables, or python/keiko.env next to this file --
 App Lab's app.yaml has no env section, so the file is how the app is configured
-when it runs under `arduino-app-cli`; real environment variables take precedence):
+when it runs under `arduino-app-cli`; real environment variables take precedence;
+the file is re-read every second, so pushing a new one redirects the stream live):
   KEIKO_UDP_HOST   default auto           pipeline receiver. "auto" = the board's own
                                           Linux side: the Docker gateway when App Lab
                                           runs us in a container (127.0.0.1 in there is
@@ -88,6 +89,7 @@ def resolve_udp_host(value):
     return value.strip()
 
 
+_REAL_ENV = dict(os.environ)          # what was set outside the file; the file never overrides these
 load_env_file()
 UDP_HOST = resolve_udp_host(os.environ.get("KEIKO_UDP_HOST", "auto"))
 UDP_PORT = int(os.environ.get("KEIKO_UDP_PORT", "5005"))
@@ -96,6 +98,51 @@ WAV_PATH = os.environ.get("KEIKO_WAV")
 QUIET = bool(os.environ.get("KEIKO_QUIET"))
 
 HDR = struct.Struct("<4sBBBBfIQH")
+
+
+def read_env_file(path=ENV_FILE):
+    out = {}
+    try:
+        with open(path) as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    k, v = line.split("=", 1)
+                    out[k.strip()] = v.strip().strip("\"'")
+    except OSError:
+        pass
+    return out
+
+
+def reload_settings(path=ENV_FILE):
+    """Re-read keiko.env and apply UDP host/port/node id (keys set in the real environment win).
+    Returns True if anything changed. Lets `make retarget UDP_HOST=...` redirect the stream without an app restart."""
+    global UDP_HOST, UDP_PORT, NODE_ID
+    f = read_env_file(path)
+    get = lambda k, d: _REAL_ENV.get(k, f.get(k, d))
+    host = resolve_udp_host(get("KEIKO_UDP_HOST", "auto"))
+    port = int(get("KEIKO_UDP_PORT", "5005"))
+    node = int(get("KEIKO_NODE_ID", "0"))
+    changed = (host, port, node) != (UDP_HOST, UDP_PORT, NODE_ID)
+    UDP_HOST, UDP_PORT, NODE_ID = host, port, node
+    return changed
+
+
+def watch_settings(period=1.0):
+    """Daemon thread: poll keiko.env and apply changes."""
+    import threading
+
+    def run():
+        last = read_env_file()
+        while True:
+            time.sleep(period)
+            cur = read_env_file()
+            if cur != last:
+                last = cur
+                if reload_settings():
+                    print(f"settings reloaded: udp -> {UDP_HOST}:{UDP_PORT} node {NODE_ID}", flush=True)
+
+    threading.Thread(target=run, name="keiko-env-watch", daemon=True).start()
 
 
 class Node:
@@ -218,6 +265,7 @@ def run_router_socket(node, path="/var/run/arduino-router.sock"):
 
 def main():
     node = Node()
+    watch_settings()
     where = "docker gateway = board host" if docker_gateway() == UDP_HOST else "configured"
     print(f"keiko unoq node -> udp {UDP_HOST}:{UDP_PORT} ({where})" + (f", wav {WAV_PATH}" if WAV_PATH else ""), flush=True)
     try:

@@ -23,8 +23,7 @@ piezos ─► PN2222 Darlington follower ─► A0 (14-bit ADC, ~3.3 kHz)
 | `python/main.py` | Linux: receives blocks, health line, UDP forward, WAV log |
 | `python/test_node.py` | offline test of the Python side with synthetic blocks (`make test`) |
 | `python/keiko.env` | settings: UDP destination, node id, WAV log (app.yaml can't carry env vars) |
-| `python/udp_listen.py` | receiver that prints what the UDP stream delivers (`make listen`) |
-| `record.sh` | runs on the board for `make record`: WAV logging on, restart, wait, record, stop, WAV logging off |
+| `python/udp_listen.py` | receiver that prints what the UDP stream delivers (`make listen`) and can record it to a WAV (`make record`) |
 | `app.yaml` | App Lab / `arduino-app-cli` manifest |
 | `Makefile` | `make start` / `logs` / `stop` … over USB (adb) or Wi-Fi (ssh) |
 
@@ -88,7 +87,7 @@ make stop      make shell             make ip
 ### Record a clip and run it through the whale CNN (the MVP loop, by hand)
 
 ```bash
-make record DURATION=30                      # -> recordings/<utc>.wav on this Mac (3333 Hz, 16-bit mono)
+make record DURATION=30                      # -> recordings/<utc>.wav on this Mac (3333 Hz, 16-bit mono); app keeps running
 ```
 
 ```bash
@@ -127,6 +126,11 @@ container, not the board. `KEIKO_UDP_HOST=auto` sends to the container's default
 Linux side — a pipeline running on the UNO Q listens on `0.0.0.0:5005` and gets every block. To receive on a
 laptop instead, put the laptop's IP there (same network as the board), `make start`, then `make listen`
 (`python/udp_listen.py`, prints packets/s, sample rate, and missing sequence numbers).
+
+To stream to a laptop instead: `make retarget UDP_HOST=<laptop ip>` (same network as the board). It rewrites the
+staged copy of `keiko.env` and pushes it; the node re-reads the file every second, so no restart — restarts re-flash
+the MCU and have wedged the board's router. `make retarget UDP_HOST=auto` puts it back. `pipeline/`'s `make live`
+does this for you and picks the right IP.
 
 The Python side also runs outside App Lab (`python3 python/main.py` on the board) — it falls back to
 speaking MessagePack-RPC to `/var/run/arduino-router.sock` directly, and `auto` then means `127.0.0.1`.

@@ -1,0 +1,10 @@
+# same as training/whale_cnn (predict.py imports train.py) plus what open-source/tools/keiko_data.py needs for --archive
+torch
+numpy
+pandas
+scikit-learn
+librosa
+soundfile
+scipy
+matplotlib
+pillow
