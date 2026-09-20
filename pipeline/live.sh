@@ -9,7 +9,7 @@
 set -e
 HERE=$(cd "$(dirname "$0")" && pwd); NODE="$HERE/../firmware/unoq"
 PY=${PY:-$HERE/../.venv/bin/python}; [ -x "$PY" ] || PY=python3
-VIA=${VIA:-wifi}; PORT=${PORT:-5005}; TCP_PORT=${TCP_PORT:-5006}
+VIA=${VIA:-usb}; PORT=${PORT:-5005}; TCP_PORT=${TCP_PORT:-5006}
 ADB=$(command -v adb || ls "$HOME"/Library/Arduino15/packages/arduino/tools/adb/*/adb 2>/dev/null | tail -1)
 
 case "$VIA" in
