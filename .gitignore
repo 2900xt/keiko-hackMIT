@@ -14,3 +14,7 @@ dist/
 .pio/
 .vscode/
 node_modules/
+
+# the detection database under open-source/data is meant to be committed
+!open-source/data/
+!open-source/data/clips/*.wav

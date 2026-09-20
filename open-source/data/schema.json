@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Keiko detection",
+  "description": "One row of data/detections.csv. Paths are relative to the data/ folder.",
+  "type": "object",
+  "required": ["id", "buoy_id", "timestamp_utc", "latitude", "longitude", "confidence", "clip_path", "spectrogram_path", "source"],
+  "properties": {
+    "id":               { "type": "string", "description": "<buoy_id>-<UTC timestamp compact>, unique" },
+    "buoy_id":          { "type": "string", "description": "matches buoys.csv" },
+    "timestamp_utc":    { "type": "string", "format": "date-time", "description": "start of the call, ISO-8601 UTC" },
+    "latitude":         { "type": "number" },
+    "longitude":        { "type": "number" },
+    "confidence":       { "type": "number", "minimum": 0, "maximum": 1, "description": "classifier confidence" },
+    "species":          { "type": "string", "description": "common name or 'unknown'" },
+    "peak_hz":          { "type": "number" },
+    "duration_s":       { "type": "number" },
+    "sample_rate_hz":   { "type": "integer" },
+    "clip_path":        { "type": "string", "description": "16-bit mono PCM WAV" },
+    "spectrogram_path": { "type": "string", "description": "PNG, mel axis 0-1 kHz, low frequency at bottom" },
+    "source":           { "type": "string", "enum": ["field", "synthetic"] },
+    "notes":            { "type": "string" }
+  }
+}

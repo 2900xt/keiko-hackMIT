@@ -1,0 +1,2 @@
+buoy_id,name,latitude,longitude,hydrophone,sample_rate_hz,deployed_utc,status
+KEIKO-01,Charles River Basin off MIT Sailing Pavilion,42.35720,-71.08680,piezo disc array,8000,2026-09-19T00:00:00Z,synthetic
