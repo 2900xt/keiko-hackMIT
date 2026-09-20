@@ -28,7 +28,17 @@ body {
   padding: 18px 28px;
   border-bottom: 1px solid var(--rule);
 }
+.top-left { display: flex; align-items: center; gap: 32px; }
 .wordmark { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+.tabs { display: flex; gap: 4px; }
+.tab {
+  font: inherit; font-size: 14px; color: var(--ink-2); background: none; border: 0;
+  padding: 6px 12px; border-radius: 4px; cursor: pointer;
+}
+.tab:hover { color: var(--ink); background: #f3f3f3; }
+.tab.on { color: var(--ink); font-weight: 700; background: #f0f0f0; }
+.count { display: inline-block; min-width: 18px; padding: 0 5px; margin-left: 4px; border-radius: 9px; background: var(--ink); color: #fff; font-size: 11px; font-weight: 700; line-height: 18px; text-align: center; }
+.hidden { display: none !important; }
 .top-right { display: flex; align-items: center; gap: 20px; font-size: 13px; color: var(--ink-2); }
 .live { display: inline-flex; align-items: center; gap: 8px; }
 .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-3); }
@@ -81,6 +91,27 @@ body {
 .level-bar i { display: block; height: 100%; width: 0; background: var(--ink); transition: width .12s linear; }
 .level-val { font-size: 13px; font-variant-numeric: tabular-nums; color: var(--ink-2); min-width: 60px; text-align: right; }
 
+/* database */
+.db { flex: 1; padding: 24px 28px 40px; overflow-y: auto; }
+.db-head { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px; }
+.db-title { font-size: 26px; font-weight: 700; letter-spacing: -0.01em; }
+.db-title span { font-variant-numeric: tabular-nums; }
+.db-table { width: 100%; border-collapse: collapse; }
+.db-table th { text-align: left; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); padding: 8px 12px 8px 0; border-bottom: 1px solid var(--ink); }
+.db-table td { padding: 10px 12px 10px 0; border-bottom: 1px solid var(--rule); vertical-align: middle; font-variant-numeric: tabular-nums; }
+.db-table tr.new td { animation: flash 1.2s ease-out; }
+@keyframes flash { from { background: #fff6d6; } to { background: transparent; } }
+.db-table .sub { display: block; font-size: 12px; color: var(--ink-2); }
+.conf { display: inline-flex; align-items: center; gap: 8px; }
+.conf-bar { width: 64px; height: 6px; background: var(--rule); border-radius: 3px; overflow: hidden; }
+.conf-bar i { display: block; height: 100%; background: var(--ink); }
+.thumb { display: block; width: 144px; height: 48px; border-radius: 2px; background: #000004; }
+.db-table audio { height: 32px; width: 220px; }
+.db-empty { color: var(--ink-2); margin: 24px 0; }
+
+/* sighting markers on the live map */
+.sighting { width: 10px; height: 10px; border-radius: 50%; background: #f59e0b; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.4); }
+
 /* map chrome */
 .leaflet-container { font-family: inherit; background: #0b1a24; }
 .leaflet-control-zoom { border: 0 !important; box-shadow: 0 1px 4px rgba(0,0,0,.3) !important; }
@@ -95,6 +126,9 @@ body {
 .buoy-label::before { display: none; }
 
 @media (max-width: 900px) {
+  .top { flex-wrap: wrap; gap: 10px; }
+  .db { padding: 16px; }
+  .db-table th:nth-child(4), .db-table td:nth-child(4) { display: none; }
   .grid { grid-template-columns: 1fr; }
   .map-cell { min-height: 55vh; }
   .side { border-left: 0; border-top: 1px solid var(--rule); }

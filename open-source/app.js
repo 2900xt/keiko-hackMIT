@@ -73,5 +73,81 @@
     $('level-val').textContent = smooth.toFixed(1) + ' dB';
   });
 
+  // ---- tabs (deep-linkable: #live / #db) ---------------------------------
+  function showView(name) {
+    document.querySelectorAll('.tab').forEach((b) => b.classList.toggle('on', b.dataset.view === name));
+    document.querySelectorAll('.view').forEach((v) => v.classList.toggle('hidden', v.id !== 'view-' + name));
+    if (name === 'live') map.invalidateSize();
+  }
+  document.querySelectorAll('.tab').forEach((btn) => btn.addEventListener('click', () => { location.hash = btn.dataset.view; }));
+  window.addEventListener('hashchange', () => showView(location.hash === '#db' ? 'db' : 'live'));
+  showView(location.hash === '#db' ? 'db' : 'live');
+
+  // ---- database ----------------------------------------------------------
+  const detections = [];
+  const sightings = L.layerGroup().addTo(map);
+
+  // Small spectrogram of one call, drawn from its parameters (same look as the live panel).
+  function thumb(d) {
+    const c = document.createElement('canvas'); c.width = 144; c.height = 48; c.className = 'thumb';
+    const g = c.getContext('2d'), W = c.width, H = c.height, cols = W, span = d.duration_s + 1.0; // 0.5 s pad each side
+    const noise = mulberry(hash(d.id));
+    for (let x = 0; x < cols; x++) {
+      const t = x / cols * span - 0.5, ph = t / d.duration_s;
+      const env = ph > 0 && ph < 1 ? Math.sin(ph * Math.PI) * 0.85 : 0, f = d.f0 + d.sweep * ph;
+      for (let y = 0; y < H; y++) {
+        const hz = melInv((1 - (y + 0.5) / H) * melMax);
+        let v = (0.22 * (1 - hz / 1000) + 0.06) * (0.5 + noise());
+        if (env) v += env * Math.exp(-Math.pow((hz - f) / 22, 2));
+        g.fillStyle = magma(v); g.fillRect(x, y, 1, 1);
+      }
+    }
+    return c;
+  }
+  const melInv = (m) => 700 * (Math.pow(10, m / 2595) - 1);
+  function hash(str) { let h = 2166136261; for (const ch of str) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
+  function mulberry(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+  // 8 kHz mono WAV of the same call: noise floor + frequency sweep with a sine envelope.
+  function wav(d) {
+    const sr = 8000, n = Math.round(sr * (d.duration_s + 0.6)), out = new Int16Array(n), noise = mulberry(hash(d.id) ^ 7);
+    let phase = 0;
+    for (let i = 0; i < n; i++) {
+      const t = i / sr - 0.3, ph = t / d.duration_s;
+      const env = ph > 0 && ph < 1 ? Math.sin(ph * Math.PI) * 0.7 : 0;
+      phase += 2 * Math.PI * (d.f0 + d.sweep * Math.max(0, Math.min(1, ph))) / sr;
+      out[i] = Math.max(-1, Math.min(1, (noise() - 0.5) * 0.12 + env * Math.sin(phase))) * 32767;
+    }
+    const buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
+    const str = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+    str(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); str(8, 'WAVE'); str(12, 'fmt '); v.setUint32(16, 16, true);
+    v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true);
+    v.setUint16(32, 2, true); v.setUint16(34, 16, true); str(36, 'data'); v.setUint32(40, n * 2, true);
+    new Int16Array(buf, 44).set(out);
+    return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
+  }
+
+  function addDetection(d, live) {
+    detections.push(d);
+    const when = new Date(d.ts);
+    const tr = document.createElement('tr');
+    if (live) tr.className = 'new';
+    tr.innerHTML =
+      '<td>' + when.toLocaleTimeString() + '<span class="sub">' + when.toLocaleDateString() + '</span></td>' +
+      '<td>' + d.lat.toFixed(5) + ', ' + d.lon.toFixed(5) + '<span class="sub">' + d.f0 + ' Hz · ' + d.duration_s + ' s</span></td>' +
+      '<td><span class="conf"><span class="conf-bar"><i style="width:' + Math.round(d.confidence * 100) + '%"></i></span>' + Math.round(d.confidence * 100) + '%</span></td>' +
+      '<td class="td-thumb"></td>' +
+      '<td><audio controls preload="none" src="' + wav(d) + '"></audio></td>';
+    tr.querySelector('.td-thumb').appendChild(thumb(d));
+    $('db-rows').prepend(tr);
+    $('db-count').textContent = $('db-total').textContent = detections.length;
+    $('db-empty').classList.add('hidden');
+    L.marker([d.lat, d.lon], { icon: L.divIcon({ className: '', html: '<div class="sighting"></div>', iconSize: [10, 10], iconAnchor: [5, 5] }) })
+      .bindTooltip(Math.round(d.confidence * 100) + '% · ' + when.toLocaleTimeString(), { direction: 'top', offset: [0, -6] })
+      .addTo(sightings);
+  }
+  feed.backfill(8).forEach((d) => addDetection(d, false));
+  feed.on('detection', (d) => addDetection(d, true));
+
   feed.start();
 })();

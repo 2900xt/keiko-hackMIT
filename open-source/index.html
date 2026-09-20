@@ -10,14 +10,20 @@
 </head>
 <body>
   <header class="top">
-    <div class="wordmark">Keiko</div>
+    <div class="top-left">
+      <div class="wordmark">Keiko</div>
+      <nav class="tabs">
+        <button class="tab on" data-view="live" type="button">Live</button>
+        <button class="tab" data-view="db" type="button">Database <span class="count" id="db-count">0</span></button>
+      </nav>
+    </div>
     <div class="top-right">
       <span class="live" id="live"><span class="live-dot"></span><span id="live-text">Connecting</span></span>
       <span class="clock" id="clock">--:--:--</span>
     </div>
   </header>
 
-  <main class="grid">
+  <main class="grid view" id="view-live">
     <section class="map-cell">
       <div id="map"></div>
     </section>
@@ -48,6 +54,23 @@
         </div>
       </section>
     </aside>
+  </main>
+
+  <main class="db view hidden" id="view-db">
+    <div class="db-head">
+      <div>
+        <div class="eyebrow">Sightings</div>
+        <div class="db-title"><span id="db-total">0</span> whale detections</div>
+      </div>
+      <div class="meta">Newest first · synthetic data</div>
+    </div>
+    <table class="db-table">
+      <thead>
+        <tr><th>Time</th><th>Location</th><th>Confidence</th><th>Spectrogram</th><th>Audio</th></tr>
+      </thead>
+      <tbody id="db-rows"></tbody>
+    </table>
+    <p class="db-empty" id="db-empty">No detections yet. Leave the Live tab running for a minute.</p>
   </main>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
