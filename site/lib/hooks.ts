@@ -49,22 +49,28 @@ export function useElementSize<T extends HTMLElement>() {
   return [ref, size] as const;
 }
 
-// One shared <audio> element; whichever button started it shows the stop state.
+// One shared <audio> element; whichever button started it shows the stop
+// state. A clip that fails to load is remembered so its button can say so.
 export function usePlayer() {
   const player = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState<string | null>(null);
+  const [failed, setFailed] = useState<string | null>(null);
   useEffect(() => {
     const a = new Audio();
     player.current = a;
     const ended = () => setPlaying(null);
+    const error = () => { setPlaying(null); setFailed(a.src); };
     a.addEventListener("ended", ended);
-    return () => { a.removeEventListener("ended", ended); a.pause(); player.current = null; };
+    a.addEventListener("error", error);
+    return () => { a.removeEventListener("ended", ended); a.removeEventListener("error", error); a.pause(); player.current = null; };
   }, []);
   function toggle(src: string) {
     const a = player.current;
     if (!a) return;
     if (playing === src) { a.pause(); setPlaying(null); return; }
-    a.pause(); a.src = src; void a.play(); setPlaying(src);
+    setFailed(null);
+    a.pause(); a.src = src;
+    a.play().then(() => setPlaying(src), () => { setPlaying(null); setFailed(src); });
   }
-  return { playing, toggle };
+  return { playing, failed, toggle };
 }

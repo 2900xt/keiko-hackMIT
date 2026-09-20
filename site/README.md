@@ -16,7 +16,7 @@ npm run build    # static export to out/, data/ included
   - `LiveView.tsx` — map cell + buoy rail on top, sound strip below; `MapView.tsx` (Leaflet, client-only), `Waveform.tsx` (raw-signal oscilloscope + level bar, bottom left), `Spectrogram.tsx` (scrolling mel canvas, bottom right)
   - `DatabaseView.tsx` — summary tiles, `DetectionsChart.tsx` (14-day SVG bars), filter chips, sortable table of `DetectionRow.tsx` (time, location, confidence, spectrogram thumbnail, audio clip)
 - `lib/`
-  - `feed.ts` — synthetic feed: `telemetry` every 2 s, `audio` (spectrogram column) 20×/s, `detection` when a call ends
+  - `feed.ts` — synthetic feed: `telemetry` every 2 s, `audio` (spectrogram column) 20×/s, `detection` when a call ends; `feed.synthetic` is true, and the buoy rail says so (set it false in a real client)
   - `detections.ts` — detection types, archive + buoy loaders, time helpers
   - `dsp.ts` — magma colormap, mel scale, and the thumbnail / WAV a live row renders from its call parameters
   - `hooks.ts` — `useFeedEvent`, `useNow`, `useAudioLevel`, `useElementSize`, `usePlayer`

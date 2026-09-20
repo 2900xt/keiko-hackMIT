@@ -52,9 +52,11 @@ export default function Waveform({ feed }: { feed: Feed }) {
       </div>
       <div className="spec-x" aria-hidden="true"><span>0 ms</span><span>32</span><span>64</span><span>96</span><span>128 ms</span></div>
       <div className="level">
-        <span className="eyebrow">Level</span>
-        <span className="level-bar"><i style={{ width: pct + "%" }} /></span>
-        <span className="level-val">{level === null ? "— dB" : level.toFixed(1) + " dB"}</span>
+        <span className="eyebrow" id="level-label">Level</span>
+        <span className="level-bar" role="meter" aria-labelledby="level-label" aria-valuemin={-60} aria-valuemax={0} aria-valuenow={level === null ? undefined : Math.round(level)} aria-valuetext={level === null ? "no signal" : level.toFixed(1) + " dB"}>
+          <i style={{ transform: "scaleX(" + (pct / 100).toFixed(3) + ")" }} />
+        </span>
+        <span className="level-val" aria-hidden="true">{level === null ? "— dB" : level.toFixed(1) + " dB"}</span>
       </div>
     </>
   );

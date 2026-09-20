@@ -2,6 +2,7 @@ import type { LiveDetection } from "./feed";
 
 export const DATA_BASE = "data/"; // the GitHub database, relative to this page
 export const DAY = 86400000;
+export const RANGE_M = 300; // nominal hydrophone detection range, drawn as the ring on the map
 
 // One row of the site's detection list: either archived (from data/detections.json,
 // with a clip URL and a precomputed spectrogram) or live this session (drawn and
@@ -83,6 +84,19 @@ export function median(xs: number[]): number | null {
   if (!xs.length) return null;
   const c = xs.slice().sort((a, b) => a - b), n = c.length;
   return n % 2 ? c[(n - 1) / 2] : (c[n / 2 - 1] + c[n / 2]) / 2;
+}
+
+// "140 m NE of buoy": where a detection sits relative to a buoy, for readers
+// who cannot place a coordinate pair on the river by eye.
+export function offsetFrom(origin: { lat: number; lon: number }, p: { lat: number; lon: number }) {
+  const north = (p.lat - origin.lat) * 111320;
+  const east = (p.lon - origin.lon) * 111320 * Math.cos(origin.lat * Math.PI / 180);
+  const m = Math.hypot(north, east);
+  if (m < 15) return "at the buoy";
+  const deg = (Math.atan2(east, north) * 180 / Math.PI + 360) % 360;
+  const dir = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"][Math.round(deg / 45) % 8];
+  const dist = m < 1000 ? Math.round(m / 10) * 10 + " m" : (m / 1000).toFixed(1) + " km";
+  return dist + " " + dir + " of buoy";
 }
 
 export function ageOpacity(t: number, now = Date.now()) {

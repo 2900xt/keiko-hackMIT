@@ -1,7 +1,7 @@
 "use client";
 import dynamic from "next/dynamic";
 import type { Feed, Telemetry } from "@/lib/feed";
-import { ago, agoParts, type BuoyInfo, type Detection } from "@/lib/detections";
+import { ago, agoParts, RANGE_M, type BuoyInfo, type Detection } from "@/lib/detections";
 import Spectrogram from "./Spectrogram";
 import Waveform from "./Waveform";
 import type { Link } from "./KeikoApp";
@@ -14,23 +14,23 @@ interface Props {
   buoyId: string; position: { lat: number; lon: number }; telemetry: Telemetry | null;
   buoyInfo: BuoyInfo | null | undefined;
   link: Link; linkWord: string; age: number; lastAt: number;
-  detections: Detection[]; hoveredId: string | null;
+  detections: Detection[]; hoveredId: string | null; focus: { id: string; n: number } | null;
 }
 
-export default function LiveView({ feed, active, now, buoyId, position, telemetry, buoyInfo, link, linkWord, age, lastAt, detections, hoveredId }: Props) {
+export default function LiveView({ feed, active, now, buoyId, position, telemetry, buoyInfo, link, linkWord, age, lastAt, detections, hoveredId, focus }: Props) {
   return (
-    <main className={"grid view" + (active ? "" : " hidden")} id="view-live">
+    <main className={"grid view" + (active ? "" : " hidden")} id="view-live" tabIndex={-1} aria-label="Live">
       <section className="map-cell" aria-label="Map">
-        <MapView buoyId={feed.buoy.id} position={position} detections={detections} hoveredId={hoveredId} active={active} now={now} />
-        <div className="map-key">
-          <span><i className="key-buoy" />Buoy</span>
-          <span><i className="key-range" />Hydrophone range</span>
-          <span><i className="key-sight" />Detection, fades with age</span>
+        <MapView buoyId={feed.buoy.id} position={position} detections={detections} hoveredId={hoveredId} focus={focus} active={active} now={now} />
+        <div className="map-key" aria-label="Map key">
+          <span><i className="key-buoy" aria-hidden="true" />Buoy</span>
+          <span><i className="key-range" aria-hidden="true" />Hydrophone range, {RANGE_M} m</span>
+          <span><i className="key-sight" aria-hidden="true" />Detection, fades with age</span>
         </div>
       </section>
 
       <aside className="rail">
-        <section className="block">
+        <section className="block" aria-label="Buoy">
           <div className="block-head">
             <div className="eyebrow">Buoy</div>
             <div className="eyebrow eyebrow-quiet">{lastAt ? "updated " + ago(age) : "—"}</div>
@@ -39,26 +39,32 @@ export default function LiveView({ feed, active, now, buoyId, position, telemetr
             <span>{buoyId}</span>
             <span className={"state " + link}>{linkWord}</span>
           </div>
-          <div className="kv">
+          {feed.synthetic && (
+            <p className="notice">
+              <b>Simulated feed.</b>
+              <span>Telemetry, audio and calls are generated in the browser, not recorded on the river.</span>
+            </p>
+          )}
+          <dl className="kv">
             <div>
-              <div className="eyebrow">Position</div>
-              <div className="pos">
+              <dt className="eyebrow">Position</dt>
+              <dd className="pos">
                 <span>{telemetry ? telemetry.lat.toFixed(5) : "—"}</span>
-                <span className="sep">,</span>
+                <span className="sep" aria-hidden="true">,</span>
                 <span>{telemetry ? telemetry.lon.toFixed(5) : "—"}</span>
-              </div>
+              </dd>
             </div>
             <div>
-              <div className="eyebrow">Hydrophone</div>
-              <div className="val">{buoyInfo ? buoyInfo.hydrophone + " · " + buoyInfo.sample_rate_hz / 1000 + " kHz" : "—"}</div>
+              <dt className="eyebrow">Hydrophone</dt>
+              <dd className="val">{buoyInfo ? buoyInfo.hydrophone + " · " + buoyInfo.sample_rate_hz / 1000 + " kHz" : "—"}</dd>
             </div>
             <div>
-              <div className="eyebrow">Deployed</div>
-              <div className="val">
+              <dt className="eyebrow">Deployed</dt>
+              <dd className="val">
                 {buoyInfo ? new Date(buoyInfo.deployed_utc).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }) : "—"}
-              </div>
+              </dd>
             </div>
-          </div>
+          </dl>
         </section>
 
         <Stats now={now} detections={detections} />
@@ -75,7 +81,7 @@ export default function LiveView({ feed, active, now, buoyId, position, telemetr
         <div className="panel">
           <div className="block-head">
             <div className="eyebrow">Spectrogram</div>
-            <div className="eyebrow eyebrow-quiet">Mel · 0–1 kHz · last 30 s</div>
+            <div className="eyebrow eyebrow-quiet">Mel scale · 0–1 kHz · last 30 s</div>
           </div>
           <Spectrogram feed={feed} />
         </div>
@@ -90,9 +96,9 @@ function Stats({ now, detections }: { now: number | null; detections: Detection[
   let today = 0;
   if (now) { const midnight = new Date(now); midnight.setHours(0, 0, 0, 0); today = detections.filter((x) => x.t >= midnight.getTime()).length; }
   return (
-    <section className="block stats" aria-label="Summary">
-      <div className="stat"><div className="eyebrow">Today</div><div className="num">{today}</div><div className="unit">detections</div></div>
-      <div className="stat"><div className="eyebrow">Last call</div><div className="num">{last ? last[0] : "—"}</div><div className="unit">{last ? last[1] : " "}</div></div>
-    </section>
+    <dl className="block stats" aria-label="Summary">
+      <div className="stat"><dt className="eyebrow">Today</dt><dd className="num">{today}</dd><dd className="unit">{today === 1 ? "detection" : "detections"}</dd></div>
+      <div className="stat"><dt className="eyebrow">Last call</dt><dd className="num">{last ? last[0] : "—"}</dd><dd className="unit">{last ? last[1] : "none yet"}</dd></div>
+    </dl>
   );
 }

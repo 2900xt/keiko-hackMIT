@@ -4,9 +4,13 @@
 const MAGMA = [[0,0,4],[28,16,68],[79,18,123],[129,37,129],[181,54,122],[229,80,100],[251,135,97],[254,194,135],[252,253,191]];
 export const SPEC_BG = "#000004";
 
-export function magma(v: number) {
+export function magmaRGB(v: number): [number, number, number] {
   const x = Math.max(0, Math.min(0.999, v)) * (MAGMA.length - 1), i = Math.floor(x), f = x - i, a = MAGMA[i], b = MAGMA[i + 1];
-  return "rgb(" + (a[0] + (b[0] - a[0]) * f | 0) + "," + (a[1] + (b[1] - a[1]) * f | 0) + "," + (a[2] + (b[2] - a[2]) * f | 0) + ")";
+  return [a[0] + (b[0] - a[0]) * f | 0, a[1] + (b[1] - a[1]) * f | 0, a[2] + (b[2] - a[2]) * f | 0];
+}
+export function magma(v: number) {
+  const [r, g, b] = magmaRGB(v);
+  return "rgb(" + r + "," + g + "," + b + ")";
 }
 
 export const melOf = (hz: number) => 2595 * Math.log10(1 + hz / 700);
@@ -32,20 +36,26 @@ export function mulberry(a: number) {
 
 export interface CallParams { id: string; f0: number; sweep: number; duration_s: number }
 
-// Draw the spectrogram of a live call, from its parameters, onto a canvas.
+// Draw the spectrogram of a live call, from its parameters, onto a canvas of
+// any size (the 144×48 table thumbnail and the 600×200 detail view share it).
 export function drawThumb(c: HTMLCanvasElement, d: CallParams) {
   const g = c.getContext("2d");
   if (!g) return;
   const W = c.width, H = c.height, span = d.duration_s + 1, noise = mulberry(hash(d.id));
+  const img = g.createImageData(W, H), px = img.data;
+  const hzAt = new Float32Array(H);
+  for (let y = 0; y < H; y++) hzAt[y] = melInv((1 - (y + 0.5) / H) * MEL_MAX);
   for (let x = 0; x < W; x++) {
     const ph = (x / W * span - 0.5) / d.duration_s, env = ph > 0 && ph < 1 ? Math.sin(ph * Math.PI) * 0.85 : 0, f = d.f0 + d.sweep * ph;
     for (let y = 0; y < H; y++) {
-      const hz = melInv((1 - (y + 0.5) / H) * MEL_MAX);
+      const hz = hzAt[y];
       let v = (0.22 * (1 - hz / 1000) + 0.06) * (0.5 + noise());
       if (env) v += env * Math.exp(-Math.pow((hz - f) / 22, 2));
-      g.fillStyle = magma(v); g.fillRect(x, y, 1, 1);
+      const [r, gg, b] = magmaRGB(v), o = (y * W + x) * 4;
+      px[o] = r; px[o + 1] = gg; px[o + 2] = b; px[o + 3] = 255;
     }
   }
+  g.putImageData(img, 0, 0);
 }
 
 // 8 kHz WAV of a live call, as an object URL.
