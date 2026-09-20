@@ -5,3 +5,5 @@ audio/
 *.tar.gz
 *.wav
 features/**/*.npy
+marine_sounds.sqlite
+catalog/clips.csv
