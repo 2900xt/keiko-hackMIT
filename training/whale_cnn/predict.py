@@ -36,25 +36,38 @@ def windows_from_wav(path, spec, max_win=None):
         x = np.log1p(m); x = (x - x.mean()) / (x.std() + 1e-6); out[k, :, :x.shape[1]] = x[:, :T]
     return out, [s / sr for s in starts]
 
+def decide(p, classes, min_conf=0.5, margin=0.1):
+    """Abstain rule: report a whale only if total whale probability beats the no-whale probability by `margin`
+    and the top whale class is at least `min_conf`. Otherwise answer 'no_whale'. Models without no_whale classes fall back to argmax."""
+    nw = [i for i, c in enumerate(classes) if c.startswith("no_whale")]
+    if not nw: i = int(p.argmax()); return classes[i], float(p[i])
+    p_no = float(p[nw].sum()); p_whale = 1.0 - p_no
+    wi = [i for i in range(len(classes)) if i not in nw]; best = max(wi, key=lambda i: p[i])
+    if p_whale - p_no < margin or p[best] < min_conf: return "no_whale", p_no
+    return classes[best], float(p[best])
+
 @torch.no_grad()
-def classify(model, classes, spec, wav, top=3):
+def classify(model, classes, spec, wav, top=3, min_conf=0.5, margin=0.1):
     X, offsets = windows_from_wav(wav, spec)
     probs = torch.softmax(model(torch.from_numpy(X)[:, None]), dim=1).numpy()
     clip = probs.mean(0); order = np.argsort(-clip)[:top]
-    return {"file": str(wav), "n_windows": len(X),
+    label, conf = decide(clip, classes, min_conf, margin)
+    return {"file": str(wav), "n_windows": len(X), "decision": label, "confidence": conf,
             "clip": [{"species": classes[i], "prob": float(clip[i])} for i in order],
-            "windows": [{"t": float(t), "species": classes[int(p.argmax())], "prob": float(p.max())} for t, p in zip(offsets, probs)]}
+            "windows": [dict(zip(("t", "species", "prob"), (float(t), *decide(p, classes, min_conf, margin)))) for t, p in zip(offsets, probs)]}
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("wavs", nargs="+", type=pathlib.Path)
-    ap.add_argument("--model", type=pathlib.Path, default=HERE / "models" / "whale_cnn_v1.pt")
+    ap.add_argument("--model", type=pathlib.Path, default=HERE / "models" / "whale_cnn_v2.pt")
     ap.add_argument("--top", type=int, default=3)
     ap.add_argument("--json", action="store_true", help="print full JSON incl. per-window results")
+    ap.add_argument("--min_conf", type=float, default=0.5, help="abstain unless the top whale class has at least this probability")
+    ap.add_argument("--margin", type=float, default=0.1, help="abstain unless P(whale) - P(no_whale) exceeds this")
     a = ap.parse_args()
     model, classes, spec = load_model(a.model)
     for wav in a.wavs:
-        r = classify(model, classes, spec, wav, a.top)
+        r = classify(model, classes, spec, wav, a.top, a.min_conf, a.margin)
         if a.json: print(json.dumps(r, indent=1)); continue
-        print(f"{wav.name}  ({r['n_windows']} windows)")
+        print(f"{wav.name}  ({r['n_windows']} windows)  -> {r['decision']} ({r['confidence']:.2f})")
         for c in r["clip"]: print(f"   {c['species']:32s} {c['prob']:.2f}")

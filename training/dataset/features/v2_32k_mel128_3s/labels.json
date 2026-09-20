@@ -1,0 +1,191 @@
+{
+ "config": {
+  "name": "v2_32k_mel128_3s",
+  "sr": 32000,
+  "win_s": 3.0,
+  "n_fft": 1024,
+  "hop": 320,
+  "n_mels": 128,
+  "fmin": 10.0,
+  "fmax": 16000.0,
+  "min_clips": 100,
+  "min_groups": 4,
+  "max_per_label": 6000,
+  "max_win": 20,
+  "workers": 8,
+  "seed": 0
+ },
+ "n_windows": 71522,
+ "n_clips": 35260,
+ "failed_clips": 0,
+ "shape": [
+  71522,
+  128,
+  301
+ ],
+ "label_id": {
+  "Balaena_mysticetus": 0,
+  "Balaenoptera_acutorostrata": 1,
+  "Balaenoptera_bonaerensis": 2,
+  "Balaenoptera_musculus": 3,
+  "Balaenoptera_physalus": 4,
+  "Delphinapterus_leucas": 5,
+  "Delphinus_spp": 6,
+  "Eubalaena_glacialis": 7,
+  "Globicephala_spp": 8,
+  "Grampus_spp": 9,
+  "Lagenodelphis_spp": 10,
+  "Lagenorhynchus_spp": 11,
+  "Megaptera_novaeangliae": 12,
+  "Orcinus_orca": 13,
+  "Physeter_macrocephalus": 14,
+  "Pseudorca_spp": 15,
+  "Stenella_spp": 16,
+  "Tursiops_spp": 17,
+  "no_whale_biophony": 18,
+  "no_whale_noise": 19,
+  "other_baleen": 20,
+  "other_toothed": 21
+ },
+ "hierarchy": {
+  "Delphinapterus_leucas": "toothed",
+  "Tursiops_spp": "toothed",
+  "Physeter_macrocephalus": "toothed",
+  "Megaptera_novaeangliae": "baleen",
+  "Globicephala_spp": "toothed",
+  "Eubalaena_glacialis": "baleen",
+  "other_toothed": "toothed",
+  "Delphinus_spp": "toothed",
+  "Balaenoptera_physalus": "baleen",
+  "Stenella_spp": "toothed",
+  "no_whale_biophony": "no_whale",
+  "Grampus_spp": "toothed",
+  "Lagenorhynchus_spp": "toothed",
+  "Orcinus_orca": "toothed",
+  "Pseudorca_spp": "toothed",
+  "Balaenoptera_acutorostrata": "baleen",
+  "other_baleen": "baleen",
+  "Balaena_mysticetus": "baleen",
+  "Balaenoptera_musculus": "baleen",
+  "Lagenodelphis_spp": "toothed",
+  "no_whale_noise": "no_whale",
+  "Balaenoptera_bonaerensis": "baleen"
+ },
+ "windows_per_label_per_split": {
+  "Balaena_mysticetus": {
+   "val": 271,
+   "train": 353,
+   "test": 171
+  },
+  "Balaenoptera_acutorostrata": {
+   "train": 3621,
+   "val": 965,
+   "test": 1425
+  },
+  "Balaenoptera_bonaerensis": {
+   "val": 1756,
+   "test": 667,
+   "train": 3592
+  },
+  "Balaenoptera_musculus": {
+   "train": 4199,
+   "val": 903,
+   "test": 899
+  },
+  "Balaenoptera_physalus": {
+   "train": 4196,
+   "val": 902,
+   "test": 902
+  },
+  "Delphinapterus_leucas": {
+   "test": 28,
+   "train": 113,
+   "val": 28
+  },
+  "Delphinus_spp": {
+   "val": 305,
+   "train": 604,
+   "test": 271
+  },
+  "Eubalaena_glacialis": {
+   "train": 3776,
+   "test": 1112,
+   "val": 1112
+  },
+  "Globicephala_spp": {
+   "train": 1683,
+   "val": 372,
+   "test": 366
+  },
+  "Grampus_spp": {
+   "train": 221,
+   "val": 124,
+   "test": 71
+  },
+  "Lagenodelphis_spp": {
+   "train": 60,
+   "val": 186,
+   "test": 183
+  },
+  "Lagenorhynchus_spp": {
+   "train": 742,
+   "val": 165,
+   "test": 162
+  },
+  "Megaptera_novaeangliae": {
+   "train": 4190,
+   "val": 904,
+   "test": 906
+  },
+  "Orcinus_orca": {
+   "train": 4198,
+   "test": 901,
+   "val": 901
+  },
+  "Physeter_macrocephalus": {
+   "train": 4210,
+   "test": 903,
+   "val": 902
+  },
+  "Pseudorca_spp": {
+   "val": 206,
+   "train": 273,
+   "test": 90
+  },
+  "Stenella_spp": {
+   "train": 2369,
+   "test": 513,
+   "val": 539
+  },
+  "Tursiops_spp": {
+   "train": 125,
+   "test": 30,
+   "val": 29
+  },
+  "no_whale_biophony": {
+   "train": 4200,
+   "test": 900,
+   "val": 900
+  },
+  "no_whale_noise": {
+   "test": 906,
+   "train": 4192,
+   "val": 904
+  },
+  "other_baleen": {
+   "test": 20,
+   "train": 89,
+   "val": 38
+  },
+  "other_toothed": {
+   "val": 104,
+   "test": 104,
+   "train": 470
+  }
+ },
+ "split_totals": {
+  "test": 11530,
+  "train": 47476,
+  "val": 12516
+ }
+}

@@ -1,0 +1,43 @@
+{
+ "classes": [
+  "Balaena_mysticetus",
+  "Balaenoptera_acutorostrata",
+  "Balaenoptera_bonaerensis",
+  "Balaenoptera_musculus",
+  "Balaenoptera_physalus",
+  "Delphinapterus_leucas",
+  "Delphinus_spp",
+  "Eubalaena_glacialis",
+  "Globicephala_spp",
+  "Grampus_spp",
+  "Lagenodelphis_spp",
+  "Lagenorhynchus_spp",
+  "Megaptera_novaeangliae",
+  "Orcinus_orca",
+  "Physeter_macrocephalus",
+  "Pseudorca_spp",
+  "Stenella_spp",
+  "Tursiops_spp",
+  "no_whale_biophony",
+  "no_whale_noise",
+  "other_baleen",
+  "other_toothed"
+ ],
+ "feature_spec": {
+  "sr": 32000,
+  "win_s": 3.0,
+  "n_fft": 1024,
+  "hop": 320,
+  "n_mels": 128,
+  "fmin": 10.0,
+  "fmax": 16000.0
+ },
+ "metrics": {
+  "test_window_macro_f1": 0.449508880310202,
+  "test_acc": 0.6955767562879445,
+  "test_clip_macro_f1": 0.4430735996046305,
+  "test_hierarchy_acc": 0.8737207285342584,
+  "test_false_alarm_rate_on_no_whale": 0.3576965669988926,
+  "test_whale_called_no_whale": 0.049876593994241054
+ }
+}
