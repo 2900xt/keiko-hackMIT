@@ -1,5 +1,5 @@
-import KeikoApp from "@/components/KeikoApp";
+import Landing from "@/components/Landing";
 
 export default function Page() {
-  return <KeikoApp />;
+  return <Landing />;
 }

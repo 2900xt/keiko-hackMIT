@@ -53,7 +53,7 @@ export default function DatabaseView({ active, now, detections, archive, onRetry
           <p className="meta" role="status">{summary}</p>
         </div>
         <div className="db-links">
-          <a className="btn" href="data/detections.csv" download>Download CSV</a>
+          <a className="btn" href="../data/detections.csv" download>Download CSV</a>
           <a className="btn btn-quiet" href="https://github.com/2900xt/keiko-hackMIT/tree/main/site/data" rel="noopener">Database on GitHub</a>
         </div>
       </div>
