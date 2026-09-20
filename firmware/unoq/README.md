@@ -24,6 +24,7 @@ piezos ─► PN2222 Darlington follower ─► A0 (14-bit ADC, ~3.3 kHz)
 | `python/test_node.py` | offline test of the Python side with synthetic blocks (`make test`) |
 | `python/keiko.env` | settings: UDP destination, node id, WAV log (app.yaml can't carry env vars) |
 | `python/udp_listen.py` | receiver that prints what the UDP stream delivers (`make listen`) |
+| `record.sh` | runs on the board for `make record`: WAV logging on, restart, wait, record, stop, WAV logging off |
 | `app.yaml` | App Lab / `arduino-app-cli` manifest |
 | `Makefile` | `make start` / `logs` / `stop` … over USB (adb) or Wi-Fi (ssh) |
 
@@ -83,6 +84,27 @@ First run takes ~2 min (numpy install); later runs ~20 s.
 make logs      # last 30 lines        make follow   # stream
 make stop      make shell             make ip
 ```
+
+### Record a clip and run it through the whale CNN (the MVP loop, by hand)
+
+```bash
+make record DURATION=30                      # -> recordings/<utc>.wav on this Mac (3333 Hz, 16-bit mono)
+```
+
+```bash
+../../training/whale_cnn/.venv/bin/python ../../training/whale_cnn/predict.py recordings/*.wav --min_conf 0.8
+```
+
+(`python3 -m venv .venv && .venv/bin/pip install torch numpy pandas scikit-learn librosa soundfile` once in
+`training/whale_cnn/`.) The model resamples to 32 kHz itself. With nothing wired to A0 it still reports a species
+at ~0.5 on pure electrical noise, so keep `--min_conf` high and check `dc` is 1.5–1.9 V (front end connected) before
+believing a detection. To archive a detection on the website:
+
+```bash
+../../open-source/tools/keiko_data.py add --wav recordings/<utc>.wav --buoy KEIKO-01 --time <utc> --lat 42.3572 --lon -71.0868 --confidence 0.87 --species "Eubalaena glacialis"
+```
+
+then commit and push (`open-source/tools/requirements.txt` lists its deps; the whale_cnn venv already has them).
 
 Expect a line per second like:
 

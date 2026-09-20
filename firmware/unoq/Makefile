@@ -11,6 +11,7 @@
 #   make logs        last 30 lines of the app's output          make follow    stream it
 #   make stop        stop the app                               make shell     shell on the board
 #   make ip          board hostname + IP                        make listen    receive the UDP stream here (see below)
+#   make record      record DURATION=30 seconds from the hydrophone into recordings/<utc>.wav on this Mac
 #
 # Over Wi-Fi instead: `make enable-ssh` once over USB, then add `VIA=ssh BOARD=<ip or name.local>` to any target.
 #
@@ -25,21 +26,24 @@ BOARD    ?= uno-q.local
 SSH_USER ?= arduino
 STAGE    ?= /tmp/$(APP_NAME)
 PORT     ?= 5005
+DURATION ?= 30
 FQBN     := arduino:zephyr:unoq
 PYTHON   ?= $(if $(wildcard .venv/bin/python),.venv/bin/python,python3)
 # adb: Homebrew's android-platform-tools if present, else the copy the arduino:zephyr core installs
 ADB      ?= $(firstword $(shell command -v adb 2>/dev/null) $(wildcard $(HOME)/Library/Arduino15/packages/arduino/tools/adb/*/adb))
-EXCLUDES := --exclude .venv --exclude __pycache__ --exclude '*.wav' --exclude .cache --exclude Makefile --exclude .DS_Store
+EXCLUDES := --exclude .venv --exclude __pycache__ --exclude '*.wav' --exclude .cache --exclude Makefile --exclude .DS_Store --exclude recordings
 
 ifeq ($(VIA),ssh)
   RUN    = ssh $(SSH_USER)@$(BOARD)
   DEPLOY = rsync -a --delete $(EXCLUDES) ./ $(SSH_USER)@$(BOARD):$(APP_DIR)/
+  PULL   = scp $(SSH_USER)@$(BOARD):
 else
   RUN    = $(ADB) shell
   DEPLOY = rsync -a --delete $(EXCLUDES) ./ $(STAGE)/ && $(ADB) push $(STAGE) $(dir $(APP_DIR))
+  PULL   = $(ADB) pull 
 endif
 
-.PHONY: core check venv test deploy start restart stop logs follow shell ip enable-ssh listen adb-check
+.PHONY: core check venv test deploy start restart stop logs follow shell ip enable-ssh listen record adb-check
 
 # ---- Mac-side --------------------------------------------------------------
 core:
@@ -92,6 +96,14 @@ shell: adb-check
 
 ip: adb-check
 	$(RUN) "hostname; hostname -I"
+
+# Record from the hydrophone: the app restarts with WAV logging on, records DURATION seconds, restarts without it
+# (~40 s overhead on top of DURATION). The file lands in recordings/ here (gitignored via *.wav).
+record: deploy
+	$(RUN) "sh $(APP_DIR)/record.sh $(DURATION)"
+	@mkdir -p recordings
+	$(PULL)$(APP_DIR)/python/hydro.wav recordings/$$(date -u +%Y%m%dT%H%M%SZ).wav
+	@ls -la recordings | tail -1
 
 # Turns on SSH (App Lab's "network mode"). Needed once before VIA=ssh; the board must already be on Wi-Fi.
 enable-ssh:
