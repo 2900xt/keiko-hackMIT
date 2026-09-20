@@ -180,7 +180,8 @@ class KeikoES:
 
     # -- writes
     def add_window(self, doc):
-        self._buf.append({"_index": WINDOWS, "_source": doc})
+        # deterministic id: a re-run of the backfill (or a replayed stream) overwrites instead of duplicating
+        self._buf.append({"_index": WINDOWS, "_id": f"{doc['buoy_id']}-{doc['@timestamp']}", "_source": doc})
         if len(self._buf) >= self.flush_every or time.time() - self._last_flush >= self.flush_s:
             self.flush()
 
@@ -233,8 +234,11 @@ class KeikoES:
     def similar(self, ref, k=5, exclude_self=True, num_candidates=100):
         """kNN on the embedding. `ref` is a detection id (its stored vector is used) or a vector."""
         if isinstance(ref, str):
-            vec = self.get(ref).get("embedding")
-            if vec is None:
+            # ES 9 keeps dense_vector out of _source; `fields` still returns it
+            r = self.es.search(index=DETECTIONS, query={"ids": {"values": [ref]}}, fields=["embedding"], source=False, size=1).body
+            hits = r["hits"]["hits"]
+            vec = hits[0].get("fields", {}).get("embedding") if hits else None
+            if not vec:
                 raise ValueError(f"{ref} has no embedding")
             exclude = ref
         else:

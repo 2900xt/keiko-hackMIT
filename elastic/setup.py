@@ -20,13 +20,13 @@ What it creates
                                 5 min -> webhook action (if KEIKO_WEBHOOK_URL) — the NOAA ship-speed-zone use case
 """
 import argparse
-import base64
 import json
 import os
 import ssl
-import sys
 import urllib.error
 import urllib.request
+
+from elasticsearch import ApiError
 
 from keiko_es import DETECTIONS, WINDOWS, KeikoES, load_env
 
@@ -82,7 +82,15 @@ def ensure_ml_job(es):
         print(f"datafeed {feed_id}: created")
     st = ml.get_job_stats(job_id=JOB_ID).body["jobs"][0]["state"]
     if st != "opened":
-        ml.open_job(job_id=JOB_ID)
+        try:
+            ml.open_job(job_id=JOB_ID)
+        except ApiError as e:
+            if e.status_code != 429:
+                raise
+            # Elastic Cloud with ML autoscaling provisions an ML node on the first open; without it, add one in the console
+            print(f"ML job {JOB_ID}: created but no ML node yet ({e.message}).\n"
+                  "   Cloud console > deployment > Edit > Machine Learning instances (or enable autoscaling), then rerun setup.py")
+            return
     fst = ml.get_datafeed_stats(datafeed_id=feed_id).body["datafeeds"][0]["state"]
     if fst != "started":
         ml.start_datafeed(datafeed_id=feed_id, start="0")     # from the beginning of the index, then real-time
@@ -104,6 +112,9 @@ class Kibana:
                 return json.loads(r.read() or b"{}")
         except urllib.error.HTTPError as e:
             raise RuntimeError(f"kibana {method} {path} -> {e.code}: {e.read().decode()[:400]}") from None
+        except urllib.error.URLError as e:
+            raise RuntimeError(f"kibana {self.url} unreachable ({e.reason}); KIBANA_URL should be the Kibana endpoint "
+                               "from the Cloud console (Copy endpoint next to Kibana), not derived from the ES one") from None
 
     def ensure_data_view(self, title, name):
         for dv in self.call("GET", "/api/data_views")["data_view"]:
@@ -199,12 +210,12 @@ def main():
         print("KIBANA_URL not set: skipping data views + rule" if not kb else "skipping kibana")
     else:
         k = Kibana(kb, os.environ["ELASTIC_API_KEY"])
-        k.ensure_data_view(f"{DETECTIONS}*", "Keiko detections")
-        k.ensure_data_view(f"{WINDOWS}*", "Keiko windows")
         try:
+            k.ensure_data_view(f"{DETECTIONS}*", "Keiko detections")
+            k.ensure_data_view(f"{WINDOWS}*", "Keiko windows")
             k.ensure_rule(os.environ.get("KEIKO_WEBHOOK_URL"))
         except RuntimeError as e:
-            print(f"rule: {e}\n   (create it in Kibana > Alerts > Rules with the ES|QL in setup.py RULE_ESQL)")
+            print(f"kibana: {e}\n   (data views + the rule can also be made in Kibana by hand: see kibana/dashboard.md)")
     print("done. next: python3 backfill.py  •  cd ../pipeline && make demo ARGS=\"--elastic\"  •  python3 ask.py")
 
 

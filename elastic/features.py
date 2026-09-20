@@ -17,11 +17,12 @@ def audio_features(y, fs):
     rms = float(np.sqrt(np.mean(y * y)) + 1e-12)
     spec = np.abs(np.fft.rfft(y * np.hanning(len(y)))) ** 2
     freqs = np.fft.rfftfreq(len(y), d=1.0 / fs)
-    spec[0] = 0.0                                       # DC is removed upstream; do not let residue win the peak
+    keep = freqs >= 15.0                                # drop DC residue + flow/handling rumble: below any call we care about
+    spec, freqs = spec[keep], freqs[keep]
     total = float(spec.sum()) + 1e-12
     centroid = float((freqs * spec).sum() / total)
     bandwidth = float(np.sqrt(((freqs - centroid) ** 2 * spec).sum() / total))
-    nz = spec[1:] + 1e-20
+    nz = spec + 1e-20
     flatness = float(np.exp(np.mean(np.log(nz))) / np.mean(nz))   # 1 = white noise, ->0 = a tone
     return {"rms_db": round(20 * np.log10(rms), 1), "peak_hz": round(float(freqs[int(spec.argmax())]), 1),
             "centroid_hz": round(centroid, 1), "bandwidth_hz": round(bandwidth, 1), "flatness": round(flatness, 3)}

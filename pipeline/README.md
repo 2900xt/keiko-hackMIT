@@ -106,5 +106,6 @@ CSV + JSON row) — commit that folder and the site shows them.
   so low-frequency species (right, fin, minke, blue, bowhead) are in band; dolphins and clicks are not.
 - Species names shown on the site are common names mapped from the model's classes (`COMMON` in the script);
   dolphin genera are lumped by the model itself.
-- Not yet: running on the board (no torch there — the ONNX model + onnxruntime would fit), Elasticsearch ingest,
-  the site's Live tab (spectrogram/level feed).
+- `--elastic` ships every window and event to Elasticsearch (embeddings, spectral descriptors, packet loss);
+  see `elastic/README.md` for setup, the dashboard, kNN/ELSER search and the ES|QL agent.
+- Not yet: running on the board (no torch there — the ONNX model + onnxruntime would fit).

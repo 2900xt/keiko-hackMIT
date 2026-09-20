@@ -9,3 +9,6 @@ scipy
 matplotlib
 pillow
 websockets
+# --elastic (elastic/keiko_es.py) and elastic/ask.py
+elasticsearch>=8.15
+anthropic
