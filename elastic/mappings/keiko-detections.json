@@ -1,0 +1,58 @@
+{
+  "index_patterns": ["keiko-detections*"],
+  "priority": 500,
+  "template": {
+    "settings": {"number_of_shards": 1, "number_of_replicas": 0},
+    "mappings": {
+      "dynamic_templates": [
+        {"probs_are_floats": {"path_match": "probs.*", "mapping": {"type": "float"}}}
+      ],
+      "properties": {
+        "@timestamp":       {"type": "date"},
+        "id":               {"type": "keyword"},
+        "buoy_id":          {"type": "keyword"},
+        "buoy_name":        {"type": "keyword"},
+        "species":          {"type": "keyword"},
+        "model_class":      {"type": "keyword"},
+        "confidence":       {"type": "float"},
+        "duration_s":       {"type": "float"},
+        "windows":          {"type": "integer"},
+        "sample_rate_hz":   {"type": "integer"},
+        "location":         {"type": "geo_point"},
+        "buoy_location":    {"type": "geo_point"},
+        "source":           {"type": "keyword"},
+        "track_id":         {"type": "keyword"},
+        "clip_path":        {"type": "keyword"},
+        "spectrogram_path": {"type": "keyword"},
+        "notes":            {"type": "text"},
+        "audio": {
+          "properties": {
+            "rms_db":       {"type": "float"},
+            "peak_hz":      {"type": "float"},
+            "centroid_hz":  {"type": "float"},
+            "bandwidth_hz": {"type": "float"},
+            "flatness":     {"type": "float"}
+          }
+        },
+        "fix": {
+          "properties": {
+            "err_m":        {"type": "float"},
+            "method":       {"type": "keyword"},
+            "truth_m_off":  {"type": "float"},
+            "simulated_buoys": {"type": "keyword"},
+            "arrivals": {
+              "properties": {
+                "buoy_id":   {"type": "keyword"},
+                "dt_ms":     {"type": "float"},
+                "range_m":   {"type": "float"},
+                "simulated": {"type": "boolean"}
+              }
+            }
+          }
+        },
+        "embedding": {"type": "dense_vector", "dims": 512, "index": true, "similarity": "cosine"},
+        "description": {"type": "semantic_text"}
+      }
+    }
+  }
+}

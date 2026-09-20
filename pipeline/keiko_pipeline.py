@@ -4,12 +4,15 @@
     python3 keiko_pipeline.py                      # listen on 0.0.0.0:5005 for node packets (see firmware/unoq/python/main.py)
     python3 keiko_pipeline.py --wav rec.wav        # same logic over a file, as fast as possible (offline test)
     python3 keiko_pipeline.py --archive            # also add each event to site/data (then commit that folder)
+    python3 keiko_pipeline.py --elastic            # also ship every window + event to Elasticsearch (elastic/.env)
     python3 keiko_pipeline.py --server ws://127.0.0.1:8765   # also stream to server/keiko_server.py (live map)
 
 Every --hop seconds the last --win seconds of audio are resampled to the model's 32 kHz, turned into the same
 log-mel window predict.py uses, and classified. A run of whale windows becomes one event; when it ends the clip
 is written to --out as WAV plus a line in events.jsonl, and with --archive it goes through
-site/tools/keiko_data.py add (clip, spectrogram, CSV/JSON row) so the website shows it.
+site/tools/keiko_data.py add (clip, spectrogram, CSV/JSON row) so the website shows it. With --elastic every
+window (label, per-class probabilities, spectral descriptors, packet loss) goes to keiko-windows and every event,
+with the CNN's 512-d embedding for kNN and a sentence for semantic search, to keiko-detections (see elastic/).
 
 Deps: the training/whale_cnn venv (torch, librosa, soundfile, pandas, scikit-learn) plus scipy, matplotlib, pillow
 for --archive. See README.md. To feed it without a board: `python3 replay_wav.py some.wav` in another terminal.
@@ -30,7 +33,9 @@ import numpy as np
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "training" / "whale_cnn"))
+sys.path.insert(0, str(REPO / "elastic"))
 from predict import load_model, decide  # noqa: E402  (pulls in torch + train.py)
+from features import audio_features, logits_and_embedding, mean_embedding  # noqa: E402  (elastic/features.py, numpy only)
 import librosa  # noqa: E402
 import torch  # noqa: E402
 
@@ -64,6 +69,9 @@ class Stream:
         self.keep_s = keep_s
         self.t_end = None            # wall-clock time (s) of the last sample
         self.total = 0               # samples ever pushed
+        self.packets = 0             # datagrams since the last window (for the window doc's `net`)
+        self.dropped = 0             # sequence gaps since the last window
+        self.last_seq = None
 
     def push(self, raw, bits, fs, t_end):
         """raw: ADC counts (or 16-bit audio when bits==16)."""
@@ -78,6 +86,17 @@ class Stream:
             self.buf = self.buf[-keep:]
         self.total += len(x)
         self.t_end = t_end
+
+    def note_packet(self, seq):
+        self.packets += 1
+        if self.last_seq is not None and seq > self.last_seq + 1:
+            self.dropped += seq - self.last_seq - 1
+        self.last_seq = seq
+
+    def take_net(self):
+        net = {"packets": self.packets, "dropped_packets": self.dropped}
+        self.packets = self.dropped = 0
+        return net
 
     def last(self, seconds):
         n = int(seconds * self.fs)
@@ -116,6 +135,7 @@ class ServerLink:
         from websockets.sync.client import connect
         self._connect, self.url, self.buoy = connect, url, buoy
         self.ws = None; self.next_try = 0.0; self.sent = 0
+        self.floor = None; self.agc = None
 
     def _open(self):
         if self.ws or time.time() < self.next_try:
@@ -141,7 +161,8 @@ class ServerLink:
             self.ws = None; self.next_try = time.time() + 1
 
     def audio_frame(self, st, ts):
-        """The live strip's input: the newest 256 samples (oscilloscope) and 80 power bins 0-1 kHz from the last 0.25 s."""
+        """The live strip's input: the newest 256 samples (oscilloscope) and 80 power bins 0-1 kHz from the last 0.25 s.
+        Both are normalized against a slow running level so a 3 mV piezo and a full-scale replay look the same."""
         y = st.last(0.25)
         if y is None or st.fs <= 0:
             return
@@ -152,9 +173,14 @@ class ServerLink:
         idx = np.clip(np.searchsorted(edges, freqs, side="right") - 1, 0, 80)
         bins = np.zeros(81); np.add.at(bins, idx, spec); bins = bins[:80]
         db = 10 * np.log10(bins + 1e-12)
-        bins = np.clip((db + 90) / 60, 0, 1)                   # -90 dBFS .. -30 dBFS -> 0..1
-        rms = float(np.sqrt(np.mean(y[-256:] ** 2)) + 1e-9)
-        self.send({"type": "audio", "ts": ts, "samples": [round(float(v), 4) for v in y[-256:]],
+        floor = float(np.percentile(db, 30))
+        self.floor = floor if self.floor is None else 0.95 * self.floor + 0.05 * floor     # background level, slow
+        bins = np.clip((db - self.floor) / 35.0, 0, 1)                                     # 35 dB above the floor = full
+        tail = y[-256:]
+        peak = float(np.max(np.abs(tail))) + 1e-9
+        self.agc = peak if self.agc is None else max(peak, 0.98 * self.agc)                  # fast attack, slow release
+        rms = float(np.sqrt(np.mean(tail ** 2)) + 1e-9)
+        self.send({"type": "audio", "ts": ts, "samples": [round(float(v), 3) for v in tail / (self.agc * 1.1)],
                    "bins": [round(float(v), 3) for v in bins], "level_db": round(20 * np.log10(rms), 1)})
 
 
@@ -167,6 +193,11 @@ class Detector:
         self.n_windows = 0; self.t_start = time.time()
         self.out = pathlib.Path(a.out); self.out.mkdir(parents=True, exist_ok=True)
         self.link = ServerLink(a.server, buoy["id"]) if a.server else None
+        self.es = None
+        if a.elastic:
+            from keiko_es import KeikoES, detection_doc, window_doc   # elastic/keiko_es.py
+            self.es = KeikoES.from_env(); self.es.ensure_indices()
+            self._detection_doc, self._window_doc = detection_doc, window_doc
         self.keiko_data = None
         if a.archive:
             p = REPO / "site" / "tools" / "keiko_data.py"
@@ -175,11 +206,13 @@ class Detector:
 
     @torch.no_grad()
     def classify(self, y, fs):
+        """-> label, conf, top class, its prob, all probs (np), the 512-d embedding (np)."""
         x = torch.from_numpy(logmel(y, fs, self.spec))[None, None]
-        p = torch.softmax(self.model(x), dim=1)[0].numpy()
+        logits, emb = logits_and_embedding(self.model, x)
+        p = torch.softmax(logits, dim=1)[0].numpy()
         label, conf = decide(p, self.classes, self.a.min_conf, self.a.margin)
         top = int(p.argmax())
-        return label, conf, self.classes[top], float(p[top])
+        return label, conf, self.classes[top], float(p[top]), p, emb[0].numpy()
 
     def step(self, st, t_end):
         """Called every hop: classify the newest window, update the open event, emit it when it ends."""
@@ -210,6 +243,12 @@ class Detector:
         if ev["misses"] >= self.a.patience or (t_end - ev["t0"]) >= self.a.max_s:
             self.emit(st, ev, t_end)
             self.event = None
+
+    def ship_window(self, st, t_end, label, conf, whale, top, ptop, probs, audio, in_event):
+        if not self.es:
+            return
+        self.es.add_window(self._window_doc(t_end, self.buoy, label, conf, whale, top, ptop, probs=probs, audio=audio,
+                                            fs=st.fs, net=st.take_net(), in_event=in_event, source=self.a.source))
 
     def flush(self, st, t_now):
         """Stream went quiet: close an open event once it is older than the patience window."""
@@ -317,7 +356,7 @@ def load_buoy(a):
     if b is None and (a.lat is None or a.lon is None):
         sys.exit(f"unknown buoy {a.buoy} and no --lat/--lon given")
     return {"id": a.buoy, "lat": a.lat if a.lat is not None else float(b["latitude"]),
-            "lon": a.lon if a.lon is not None else float(b["longitude"])}
+            "lon": a.lon if a.lon is not None else float(b["longitude"]), "name": b["name"] if b else None}
 
 
 def main():
@@ -336,6 +375,7 @@ def main():
     ap.add_argument("--buoy", default="KEIKO-01"); ap.add_argument("--lat", type=float); ap.add_argument("--lon", type=float)
     ap.add_argument("--out", default=str(pathlib.Path(__file__).resolve().parent / "out"))
     ap.add_argument("--archive", action="store_true", help="add events to site/data via keiko_data.py")
+    ap.add_argument("--elastic", action="store_true", help="ship windows + events to Elasticsearch (elastic/.env)")
     ap.add_argument("--source", default="field", choices=["field", "synthetic"], help="source column for --archive (use synthetic for replays/tests)")
     ap.add_argument("--quiet", action="store_true", help="only print events")
     ap.add_argument("--server", metavar="WS_URL", help="stream windows, audio and events to server/keiko_server.py, e.g. ws://127.0.0.1:8765")
@@ -345,13 +385,17 @@ def main():
     buoy = load_buoy(a)
     print(f"model {pathlib.Path(a.model).name}: {len(classes)} classes, {spec['sr']} Hz {spec['win_s']} s windows; "
           f"thresholds min_conf={a.min_conf} margin={a.margin}; buoy {buoy['id']} @ {buoy['lat']:.5f},{buoy['lon']:.5f}; "
-          f"events -> {a.out}" + (" + site/data" if a.archive else ""), flush=True)
+          f"events -> {a.out}" + (" + site/data" if a.archive else "") + (" + elasticsearch" if a.elastic else ""), flush=True)
     det = Detector(a, model, classes, spec, buoy)
     streams = {}
     try:
         (run_wav if a.wav else run_udp)(a, det, streams)
     except KeyboardInterrupt:
         pass
+    finally:
+        if det.es:
+            det.es.close()
+            print(f"elasticsearch: {det.es.stats['windows']} windows, {det.es.stats['detections']} detections, {det.es.stats['errors']} errors", flush=True)
 
 
 if __name__ == "__main__":

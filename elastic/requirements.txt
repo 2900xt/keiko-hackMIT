@@ -1,0 +1,4 @@
+# on top of ../pipeline/requirements.txt (torch, librosa, soundfile, numpy for the embeddings + features)
+elasticsearch>=8.15
+anthropic
+python-dotenv

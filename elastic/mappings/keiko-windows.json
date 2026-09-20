@@ -1,0 +1,41 @@
+{
+  "index_patterns": ["keiko-windows*"],
+  "priority": 500,
+  "template": {
+    "settings": {"number_of_shards": 1, "number_of_replicas": 0, "refresh_interval": "1s"},
+    "mappings": {
+      "dynamic_templates": [
+        {"probs_are_floats": {"path_match": "probs.*", "mapping": {"type": "float"}}}
+      ],
+      "properties": {
+        "@timestamp":   {"type": "date"},
+        "buoy_id":      {"type": "keyword"},
+        "node":         {"type": "integer"},
+        "label":        {"type": "keyword"},
+        "confidence":   {"type": "float"},
+        "whale":        {"type": "boolean"},
+        "top_class":    {"type": "keyword"},
+        "top_p":        {"type": "float"},
+        "sample_rate_hz": {"type": "float"},
+        "in_event":     {"type": "boolean"},
+        "source":       {"type": "keyword"},
+        "location":     {"type": "geo_point"},
+        "audio": {
+          "properties": {
+            "rms_db":       {"type": "float"},
+            "peak_hz":      {"type": "float"},
+            "centroid_hz":  {"type": "float"},
+            "bandwidth_hz": {"type": "float"},
+            "flatness":     {"type": "float"}
+          }
+        },
+        "net": {
+          "properties": {
+            "dropped_packets": {"type": "integer"},
+            "packets":         {"type": "integer"}
+          }
+        }
+      }
+    }
+  }
+}
