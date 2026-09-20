@@ -12,7 +12,7 @@ hydrophone B ──> ESP32-S3 DevKitC ┘     detector → classifier → embedd
 
 ## Layout
 
-- `firmware/esp32-s3/` — hydrophone B: I2S/ADC capture → UDP stream
+- `firmware/esp32-s3/` — hydrophone B: ESP32-S3 DevKitC samples a piezo at 8 kHz → USB (laptop forwards UDP) or, with Wi-Fi credentials compiled in, UDP straight from the board (see its README)
 - `firmware/nrf7002/` — hydrophone A: SAADC capture → UDP stream (Zephyr / nRF Connect SDK)
 - `firmware/unoq/` — hydrophone C: UNO Q's own MCU samples a piezo → Bridge → UDP (see its README for the analog front end)
 - `pipeline/` — Python: UDP receiver, detector, classifier, embeddings, TDOA, Elasticsearch ingest
@@ -33,6 +33,10 @@ cd firmware/unoq && make start && make logs            # UNO Q on USB-C: flash t
 ```
 
 ```bash
+cd firmware/esp32-s3 && make flash && make start      # ESP32-S3 on USB: flash the node, watch the health line
+```
+
+```bash
 cd firmware/nrf7002 && make flash && make monitor      # nRF7002 DK on J-Link USB: flash the node, watch the health line
 ```
 
@@ -41,7 +45,7 @@ cd pipeline && make live                               # node -> this laptop ove
 ```
 
 `make live ARGS="--archive"` writes detections into `site/data/`, which the website reads. Details in
-`pipeline/README.md`, `firmware/unoq/README.md` and `firmware/nrf7002/README.md`.
+`pipeline/README.md`, `firmware/unoq/README.md`, `firmware/esp32-s3/README.md` and `firmware/nrf7002/README.md`.
 
 ## Team
 
