@@ -45,7 +45,7 @@
         samples[i] = noise + tone;
         rms += samples[i] * samples[i];
       }
-      for (let i = 0; i < NBINS; i++) bins[i] = (0.14 * (1 - i / NBINS) + 0.03) * rand(0.5, 1.5);
+      for (let i = 0; i < NBINS; i++) bins[i] = (0.22 * (1 - i / NBINS) + 0.06) * rand(0.5, 1.5);
       if (c) {
         const b = clamp(Math.round(f / 1000 * NBINS), 0, NBINS - 1);
         bins[b] = Math.min(1, bins[b] + env);
