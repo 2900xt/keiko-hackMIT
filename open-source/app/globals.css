@@ -186,6 +186,9 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outlin
 
 /* ---------- map chrome ---------- */
 .leaflet-container { font-family: inherit; background: #06101a; }
+/* Dark Gray Canvas is neutral grey; sepia + hue-rotate pulls it to the site's navy. */
+.tiles-base { filter: sepia(1) hue-rotate(178deg) saturate(2.2) brightness(0.72); }
+.tiles-labels { opacity: .85; }
 .leaflet-control-zoom { border: 1px solid var(--rule-strong) !important; box-shadow: none !important; }
 .leaflet-bar a { background: var(--paper) !important; color: var(--ink) !important; border-bottom-color: var(--rule) !important; }
 .leaflet-bar a:hover { background: var(--paper-2) !important; }

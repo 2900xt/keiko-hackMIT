@@ -27,14 +27,19 @@ export default function MapView({ buoyId, position, detections, hoveredId, activ
 
   useEffect(() => {
     if (!el.current || map.current) return;
-    const m = L.map(el.current, { zoomControl: false }).setView([position.lat, position.lon], 15);
+    const m = L.map(el.current, { zoomControl: false, maxZoom: 18 }).setView([position.lat, position.lon], 15);
     L.control.zoom({ position: "bottomright" }).addTo(m);
     L.control.scale({ position: "bottomright", imperial: false }).addTo(m);
-    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
-      maxZoom: 19, attribution: "Tiles &copy; Esri &mdash; Maxar, Earthstar Geographics, and the GIS User Community",
+    // Esri Dark Gray Canvas (keyless), split so the base can be tinted to the
+    // site's navy in CSS (.tiles-base) while the labels stay crisp above it.
+    // Native tiles stop at zoom 16; Leaflet upscales them beyond that.
+    const esri = "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/";
+    L.tileLayer(esri + "World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}", {
+      maxNativeZoom: 16, maxZoom: 18, className: "tiles-base",
+      attribution: "Tiles &copy; Esri &mdash; Esri, HERE, Garmin, OpenStreetMap contributors",
     }).addTo(m);
-    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", {
-      maxZoom: 19, pane: "overlayPane",
+    L.tileLayer(esri + "World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}", {
+      maxNativeZoom: 16, maxZoom: 18, pane: "overlayPane", className: "tiles-labels",
     }).addTo(m);
     range.current = L.circle([position.lat, position.lon], { radius: RANGE_M, color: "#fff", weight: 1.5, dashArray: "5 5", fillColor: "#fff", fillOpacity: 0.06, interactive: false }).addTo(m);
     sightings.current = L.layerGroup().addTo(m);
