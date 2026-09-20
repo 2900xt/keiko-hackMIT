@@ -38,10 +38,10 @@ export default function DatabaseView({ active, now, detections, archiveNote, fil
         <div>
           <div className="eyebrow">Sightings</div>
           <h1 className="db-title"><span>{detections.length}</span> whale detections</h1>
-          <p className="meta">{archiveNote ?? archived + " archived in data/detections.csv · " + live + " live this session, not yet archived"}</p>
+          <p className="meta">{archiveNote ?? archived + " archived in site/data/detections.csv · " + live + " live this session, not yet archived"}</p>
         </div>
         <div className="db-links">
-          <a className="btn" href="data/detections.csv" download>Download CSV</a>
+          <a className="btn" href="../data/detections.csv" download>Download CSV</a>
           <a className="btn btn-quiet" href="https://github.com/2900xt/keiko-hackMIT/tree/main/site/data" rel="noopener">Database on GitHub</a>
         </div>
       </div>

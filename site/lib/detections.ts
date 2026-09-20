@@ -1,6 +1,6 @@
 import type { LiveDetection } from "./feed";
 
-export const DATA_BASE = "data/"; // the GitHub database, relative to this page
+export const DATA_BASE = "../data/"; // the GitHub database, relative to this page (the app lives at /app/)
 export const DAY = 86400000;
 
 // One row of the site's detection list: either archived (from data/detections.json,
