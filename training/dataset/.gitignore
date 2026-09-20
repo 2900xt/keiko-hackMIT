@@ -4,3 +4,4 @@ audio/
 *.zip
 *.tar.gz
 *.wav
+features/**/*.npy
