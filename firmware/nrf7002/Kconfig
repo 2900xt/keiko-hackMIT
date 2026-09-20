@@ -1,0 +1,42 @@
+# Keiko node settings. Values live in keiko.conf (the nRF's answer to the UNO Q's python/keiko.env);
+# there is no Linux side to re-read a file, so changing any of these means `make build flash`.
+
+menu "Keiko hydrophone node"
+
+config KEIKO_WIFI_SSID
+	string "Wi-Fi network"
+	default "keiko"
+
+config KEIKO_WIFI_PSK
+	string "Wi-Fi password (empty = open network)"
+	default ""
+
+config KEIKO_UDP_HOST
+	string "Pipeline receiver: IPv4 address, 255.255.255.255 for the whole subnet, or a hostname (needs DNS_RESOLVER)"
+	default "255.255.255.255"
+
+config KEIKO_UDP_PORT
+	int "Pipeline receiver UDP port"
+	default 5005
+
+config KEIKO_NODE_ID
+	int "Node id in the packet header (UNO Q is 0)"
+	default 1
+
+config KEIKO_SAMPLE_PERIOD_TICKS
+	int "Sample period in RTC ticks (32768 Hz): 4 = 8192 Hz, 10 = 3277 Hz"
+	default 4
+	range 2 64
+
+config KEIKO_BLOCK
+	int "Samples per UDP datagram"
+	default 256
+	range 32 700
+
+config KEIKO_ADC_FULL_SCALE_MV
+	int "SAADC full scale in mV = 600 mV internal reference / gain set in the overlay"
+	default 1800
+
+endmenu
+
+source "Kconfig.zephyr"

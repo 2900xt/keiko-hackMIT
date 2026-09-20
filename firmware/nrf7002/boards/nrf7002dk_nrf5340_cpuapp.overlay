@@ -1,0 +1,34 @@
+/*
+ * Keiko hydrophone input: SAADC channel 0 on AIN0 (P0.04, Arduino header A0 on the nRF7002 DK).
+ *
+ * Internal 0.6 V reference with gain 1/3 gives a 0..1.8 V full scale, matching the DK's 1.8 V VDD
+ * that the front end is biased from. If your DK is strapped for 3.0 V VDD, use ADC_GAIN_1_6
+ * (0..3.6 V) and set CONFIG_KEIKO_ADC_FULL_SCALE_MV=3600 in keiko.conf.
+ *
+ * 10 us acquisition covers a source impedance up to ~200 kOhm (Nordic's table); the passive front end
+ * in the README is ~3.5 kOhm at signal frequencies, the 470k bias only matters at DC.
+ */
+
+#include <zephyr/dt-bindings/adc/adc.h>
+#include <zephyr/dt-bindings/adc/nrf-adc.h>
+
+/ {
+	zephyr,user {
+		io-channels = <&adc 0>;
+	};
+};
+
+&adc {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	status = "okay";
+
+	channel@0 {
+		reg = <0>;
+		zephyr,gain = "ADC_GAIN_1_3";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME(ADC_ACQ_TIME_MICROSECONDS, 10)>;
+		zephyr,input-positive = <NRF_SAADC_AIN0>;
+		zephyr,resolution = <12>;
+	};
+};
