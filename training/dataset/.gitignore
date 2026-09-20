@@ -1,0 +1,6 @@
+raw/
+audio/
+*.parquet
+*.zip
+*.tar.gz
+*.wav
