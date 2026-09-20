@@ -36,7 +36,7 @@ ifeq ($(VIA),ssh)
   DEPLOY = rsync -a --delete $(EXCLUDES) ./ $(SSH_USER)@$(BOARD):$(APP_DIR)/
 else
   RUN    = $(ADB) shell
-  DEPLOY = rsync -a --delete $(EXCLUDES) ./ $(STAGE)/ && $(ADB) push --sync $(STAGE) $(dir $(APP_DIR))
+  DEPLOY = rsync -a --delete $(EXCLUDES) ./ $(STAGE)/ && $(ADB) push $(STAGE) $(dir $(APP_DIR))
 endif
 
 .PHONY: core check venv test deploy start restart stop logs follow shell ip enable-ssh listen adb-check
