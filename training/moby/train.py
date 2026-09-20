@@ -3,6 +3,7 @@
 
     python3 train.py                        # 2-fold ensemble on ../dataset/features/moby_narw.npz, ~8 min on an M-series GPU
     python3 train.py --folds 5 --epochs 20  # the full poster setup, ~25 min
+    python3 train.py --features ../dataset/features/moby_narw_watkins.npz --out models/keiko.pt   # Kaggle + Watkins tapes = the final model
     python3 train.py --eval models/moby_narw.pt
 
 Architecture (per fold model, ~350k parameters):
@@ -21,7 +22,7 @@ branches together, random gain, one time mask.
 import argparse, json, pathlib, time
 import numpy as np, torch, torch.nn as nn, torch.nn.functional as F
 from sklearn.metrics import roc_auc_score, accuracy_score, f1_score
-from sklearn.model_selection import StratifiedKFold, train_test_split
+from sklearn.model_selection import StratifiedGroupKFold, train_test_split
 
 HERE = pathlib.Path(__file__).resolve().parent
 DEFAULT_FEATURES = HERE.parent / "dataset" / "features" / "moby_narw.npz"
@@ -127,9 +128,24 @@ def probs(model, X2, X1, y, idx, dev, bs=512):
     return torch.cat(out).numpy()
 
 
-def evaluate(model, X2, X1, y, idx, dev):
-    p = probs(model, X2, X1, y, idx, dev); yt = y[np.sort(idx)]
-    return {"auroc": float(roc_auc_score(yt, p)), "acc": float(accuracy_score(yt, p > 0.5)), "f1": float(f1_score(yt, p > 0.5))}
+def evaluate(model, X2, X1, y, idx, dev, source=None, species=None):
+    """Metrics on idx. With source / species arrays, also: Kaggle-only metrics (the only rows with negatives) and
+    recall per Watkins species (Watkins has no noise cuts, so AUROC is undefined there)."""
+    p = probs(model, X2, X1, y, idx, dev); o = np.sort(idx); yt = y[o]
+    m = {"auroc": float(roc_auc_score(yt, p)), "acc": float(accuracy_score(yt, p > 0.5)), "f1": float(f1_score(yt, p > 0.5))}
+    if source is not None and (source[o] != "kaggle").any():
+        k = source[o] == "kaggle"
+        m["kaggle"] = {"auroc": float(roc_auc_score(yt[k], p[k])), "acc": float(accuracy_score(yt[k], p[k] > 0.5)), "f1": float(f1_score(yt[k], p[k] > 0.5))}
+        w = ~k; m["watkins_recall"] = float((p[w] > 0.5).mean())
+        m["watkins_recall_by_species"] = {str(sp): float((p[w][species[o][w] == sp] > 0.5).mean()) for sp in sorted(set(species[o][w]))}
+    return m
+
+
+def fmt(m):
+    s = f"auroc {m['auroc']:.4f} acc {m['acc']:.3f} f1 {m['f1']:.3f}"
+    if "kaggle" in m:
+        s += f"  | kaggle-only auroc {m['kaggle']['auroc']:.4f} acc {m['kaggle']['acc']:.3f}  | watkins recall {m['watkins_recall']:.3f}"
+    return s
 
 
 def stats(X, idx):
@@ -155,7 +171,7 @@ def train_fold(X2, X1, y, tr, va, a, dev, fold):
             loss = F.cross_entropy(model(x2, x1), yb, weight=w, label_smoothing=0.05)
             opt.zero_grad(set_to_none=True); loss.backward(); nn.utils.clip_grad_norm_(model.parameters(), 5.0); opt.step(); sched.step()
             tot += loss.item() * len(yb)
-        m = evaluate(model, X2, X1, y, va, dev)
+        m = evaluate(model, X2, X1, y, va, dev)   # fold-val: plain metrics (Watkins rows only add positives)
         print(f"  fold {fold} ep {ep + 1:2d}/{a.epochs}  loss {tot / len(tr):.4f}  val auroc {m['auroc']:.4f} acc {m['acc']:.3f} f1 {m['f1']:.3f}  {time.time() - t0:.0f}s")
         if m["auroc"] > best:
             best, bad, best_state = m["auroc"], 0, {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
@@ -178,35 +194,45 @@ def main():
     ap.add_argument("--dropout", type=float, default=0.3)
     ap.add_argument("--test_frac", type=float, default=0.15)
     ap.add_argument("--seed", type=int, default=0)
-    ap.add_argument("--out", type=pathlib.Path, default=HERE / "models" / "moby_narw.pt")
+    ap.add_argument("--out", type=pathlib.Path, help="default models/<features stem>.pt")
     ap.add_argument("--eval", type=pathlib.Path, help="evaluate a saved ensemble on the same held-out test split")
     a = ap.parse_args()
+    a.out = a.out or HERE / "models" / (a.features.stem + ".pt")
     np.random.seed(a.seed); torch.manual_seed(a.seed); dev = device()
-    d = np.load(a.features); X2, X1, y = d["X2"], d["X1"], d["y"].astype(np.int64)
-    print(f"{len(y)} clips  X2 {X2.shape[1:]}  X1 {X1.shape[1:]}  whale {y.mean():.1%}  device {dev}")
-    dev_idx, te = train_test_split(np.arange(len(y)), test_size=a.test_frac, stratify=y, random_state=a.seed)
+    d = np.load(a.features); X2, X1, y = d["X2"], d["X1"], d["y"].astype(np.int64); n = len(y)
+    # optional provenance (moby_narw_watkins.npz): source kaggle|watkins, group = clip or Watkins tape, split ''|train|test
+    source = d["source"] if "source" in d.files else np.full(n, "kaggle")
+    group = d["group"] if "group" in d.files else np.arange(n).astype(str)
+    split = d["split"] if "split" in d.files else np.full(n, "")
+    species = d["species"] if "species" in d.files else np.full(n, "")
+    print(f"{n} clips  X2 {X2.shape[1:]}  X1 {X1.shape[1:]}  whale {y.mean():.1%}  sources {dict(zip(*np.unique(source, return_counts=True)))}  device {dev}")
+    # test = 15% of the rows without a preset split (stratified) + every row the feature file already marks "test" (held-out tapes)
+    free = np.where(split == "")[0]
+    dev_idx, te = train_test_split(free, test_size=a.test_frac, stratify=y[free], random_state=a.seed)
+    dev_idx = np.concatenate([dev_idx, np.where(split == "train")[0]]); te = np.concatenate([te, np.where(split == "test")[0]])
+    ev = lambda m, idx: evaluate(m, X2, X1, y, idx, dev, source, species)
 
     if a.eval:
         ens = load_ensemble(a.eval).to(dev)
-        print("test (ensemble):", evaluate(ens, X2, X1, y, te, dev)); return
+        print("test (ensemble):", fmt(ev(ens, te))); return
 
     models, fold_val, fold_test = [], [], []
-    if a.folds > 1:
-        splits = StratifiedKFold(a.folds, shuffle=True, random_state=a.seed).split(dev_idx, y[dev_idx])
-        splits = [(dev_idx[tr], dev_idx[va]) for tr, va in splits]
-    else:
-        tr, va = train_test_split(dev_idx, test_size=0.15 / (1 - a.test_frac), stratify=y[dev_idx], random_state=a.seed); splits = [(tr, va)]
+    # folds are grouped (a Watkins tape never sits on both sides of a fold) and stratified by label
+    k_splits = a.folds if a.folds > 1 else max(2, round((1 - a.test_frac) / 0.15))
+    splits = StratifiedGroupKFold(k_splits, shuffle=True, random_state=a.seed).split(dev_idx, y[dev_idx], group[dev_idx])
+    splits = [(dev_idx[tr], dev_idx[va]) for tr, va in splits][: a.folds]
     print(f"train ~{len(splits[0][0])}  val ~{len(splits[0][1])}  test {len(te)}  ({len(splits)} fold(s))")
     n_params = sum(p.numel() for p in Moby(X2.shape[1], X1.shape[1], a.lstm).parameters()); print(f"parameters per model: {n_params:,}")
     for k, (tr, va) in enumerate(splits):
         model, best = train_fold(X2, X1, y, tr, va, a, dev, k)
-        mt = evaluate(model, X2, X1, y, te, dev)
-        print(f"fold {k}: best val auroc {best:.4f}   test auroc {mt['auroc']:.4f} acc {mt['acc']:.3f} f1 {mt['f1']:.3f}")
+        mt = ev(model, te)
+        print(f"fold {k}: best val auroc {best:.4f}   test {fmt(mt)}")
         models.append(model); fold_val.append(best); fold_test.append(mt)
     ens = Ensemble(models).to(dev)
-    me = evaluate(ens, X2, X1, y, te, dev)
+    me = ev(ens, te)
     ta = np.array([m["auroc"] for m in fold_test])
-    print(f"\nsingle model test AUROC {ta.mean():.4f} +/- {ta.std():.4f}   ENSEMBLE test AUROC {me['auroc']:.4f} acc {me['acc']:.3f} f1 {me['f1']:.3f}")
+    print(f"\nsingle model test AUROC {ta.mean():.4f} +/- {ta.std():.4f}   ENSEMBLE test {fmt(me)}")
+    if "watkins_recall_by_species" in me: print("ensemble recall on held-out Watkins tapes by species:", me["watkins_recall_by_species"])
 
     a.out.parent.mkdir(parents=True, exist_ok=True)
     report = {"n_params_per_model": n_params, "folds": len(models), "fold_val_auroc": fold_val, "fold_test": fold_test, "ensemble_test": me,

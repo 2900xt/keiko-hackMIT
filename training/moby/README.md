@@ -51,6 +51,29 @@ place (357,725 parameters per model). A 5-fold / 20-epoch run of fold 0 alone re
 
 Sanity check on raw clips: `python3 predict.py train6.aiff train7.aiff train1.aiff train2.aiff` → 0.68, 0.93 (upcalls) vs 0.10, 0.06 (noise).
 
+### Keiko, the final model: Kaggle + Watkins, `models/keiko.pt`
+
+```bash
+python3 train.py --features ../dataset/features/moby_narw_watkins.npz --out models/keiko.pt     # 2 folds, ~8 min
+```
+`moby_narw_watkins.npz` (built by `watkins_features.py` on the `moby-watkins` branch) = the 30,000 Kaggle rows + 3,073 windows of
+Watkins baleen-whale cuts whose calls sit under 1 kHz (humpback 1,518, bowhead 957, N. Atlantic right 475, southern right 66, gray 57),
+level-matched to Kaggle and all labelled `y = 1` (Watkins has no noise cuts). `train.py` reads its `source` / `group` / `split` arrays:
+the test set is the same 4,500 Kaggle clips plus 379 windows from 9 held-out Watkins **tapes**, and the folds are grouped by tape.
+Because every negative is a Kaggle clip, the number to watch is **Kaggle-only** AUROC (is it still a whale detector, or an
+"analog tape vs MARU buoy" detector?); Watkins rows can only be scored by recall.
+
+| | val AUROC | test AUROC (all) | test AUROC, Kaggle only | recall on held-out Watkins tapes |
+|---|---|---|---|---|
+| fold 0 model | 0.9759 | 0.9782 | 0.9705 | 1.000 |
+| fold 1 model | 0.9757 | 0.9792 | 0.9718 | 1.000 |
+| **ensemble** | – | **0.9816** | **0.9750** (acc 0.922) | **1.000** |
+
+Per species on the held-out tapes: Eschrichtius robustus 1.00, Eubalaena australis 1.00, Eubalaena glacialis 1.00, Megaptera novaeangliae 1.00. Kaggle-only AUROC moved 0.9766 → 0.9750, i.e. adding
+Watkins cost nothing on buoy data while the model now fires on humpback, bowhead, gray and right whales from other recorders.
+The perfect Watkins recall is partly the tape cue (no Watkins negatives exist to punish it), so treat it as "does not miss",
+not as a false-alarm rate; the Kaggle-only accuracy is the false-alarm number.
+
 ## Files
 
 | Path | What |
@@ -61,6 +84,7 @@ Sanity check on raw clips: `python3 predict.py train6.aiff train7.aiff train1.ai
 | `models/moby_narw.pt` | the fold models + normalization stats + feature spec + report |
 | `models/moby_narw.json` | per-fold and ensemble metrics, test indices, config |
 | `models/moby_narw.onnx` | the ensemble as one graph: inputs `x2d` (B,103,126), `x1d` (B,7,126) → `p_whale` (B,) |
+| `models/keiko.{pt,json,onnx}` | **the final model**: same format, trained on Kaggle + Watkins (see above); `predict.py` default |
 
 ```python
 import numpy as np, torch
