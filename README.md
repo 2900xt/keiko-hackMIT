@@ -21,6 +21,23 @@ hydrophone B ──> ESP32-S3 DevKitC ┘     detector → classifier → embedd
 - `hardware/` — buoy enclosure: OpenSCAD source, STLs, print previews, design review notes
 - `open-source/` — public website (Next.js, static export): live map of whale detections across buoys (draft, one buoy on synthetic data)
 
+## Try it
+
+```bash
+cd pipeline && make venv && make test && make demo      # no hardware: humpback song -> detections
+```
+
+```bash
+cd firmware/unoq && make start && make logs            # UNO Q on USB-C: flash the node, watch the health line
+```
+
+```bash
+cd pipeline && make live                               # node -> this laptop over Wi-Fi -> whale CNN -> events
+```
+
+`make live ARGS="--archive"` writes detections into `open-source/data/`, which the website reads. Details in
+`pipeline/README.md` and `firmware/unoq/README.md`.
+
 ## Team
 
 Taha Rawjani ([@2900xt](https://github.com/2900xt)) · Matthew Li ([@Mallhw](https://github.com/Mallhw))

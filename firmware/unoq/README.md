@@ -127,6 +127,11 @@ Linux side — a pipeline running on the UNO Q listens on `0.0.0.0:5005` and get
 laptop instead, put the laptop's IP there (same network as the board), `make start`, then `make listen`
 (`python/udp_listen.py`, prints packets/s, sample rate, and missing sequence numbers).
 
+To stream to a laptop instead: `make retarget UDP_HOST=<laptop ip>` (same network as the board). It rewrites the
+staged copy of `keiko.env` and pushes it; the node re-reads the file every second, so no restart — restarts re-flash
+the MCU and have wedged the board's router. `make retarget UDP_HOST=auto` puts it back. `pipeline/`'s `make live`
+does this for you and picks the right IP.
+
 The Python side also runs outside App Lab (`python3 python/main.py` on the board) — it falls back to
 speaking MessagePack-RPC to `/var/run/arduino-router.sock` directly, and `auto` then means `127.0.0.1`.
 

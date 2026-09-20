@@ -194,14 +194,22 @@ class Detector:
 def run_udp(a, det, streams):
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM); s.bind((a.host, a.port)); s.settimeout(1.0)
     print(f"listening on udp {a.host}:{a.port}", flush=True)
-    next_step = {}
+    next_step = {}; seen = set(); quiet_since = time.time(); hinted = 0
     while True:
         try:
             data, addr = s.recvfrom(65536)
         except socket.timeout:
+            now = time.time()
             for st in streams.values():
-                det.flush(st, time.time())
+                det.flush(st, now)
+            if now - quiet_since > 10 and now - hinted > 30:
+                hinted = now
+                print(f"no packets for {now - quiet_since:.0f} s. Node side: make logs (fs= line present?), "
+                      f"make retarget UDP_HOST=<this machine's ip>; both on the same network?", flush=True)
             continue
+        quiet_since = time.time()
+        if addr[0] not in seen:
+            seen.add(addr[0]); print(f"receiving from {addr[0]}", flush=True)
         if len(data) < HDR.size:
             continue
         magic, ver, node, fmt, bits, fs, seq, t_ns, n = HDR.unpack(data[:HDR.size])

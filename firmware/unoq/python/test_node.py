@@ -39,4 +39,8 @@ assert abs(node.dc - 8400) < 50, node.dc
 node.wav.close()
 with wave.open(os.environ["KEIKO_WAV"]) as w:
     assert w.getframerate() == round(FS) and w.getnframes() > 30 * BLOCK
-print(f"ok  fs={node.fs:.1f}  dc={node.dc:.0f} counts  wav frames={w.getnframes()}")
+# hot reload: a file-only key applies, a key set in the real environment (KEIKO_UDP_HOST above) does not get overridden
+envf = os.path.join(tempfile.mkdtemp(), "keiko.env")
+open(envf, "w").write("KEIKO_UDP_HOST=10.9.9.9\nKEIKO_NODE_ID=7\n")
+assert main.reload_settings(envf) and main.NODE_ID == 7 and main.UDP_HOST == "127.0.0.1", (main.NODE_ID, main.UDP_HOST)
+print(f"ok  fs={node.fs:.1f}  dc={node.dc:.0f} counts  wav frames={w.getnframes()}  reload ok")

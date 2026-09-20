@@ -12,6 +12,8 @@
 #   make stop        stop the app                               make shell     shell on the board
 #   make ip          board hostname + IP                        make listen    receive the UDP stream here (see below)
 #   make record      record DURATION=30 seconds from the hydrophone into recordings/<utc>.wav on this Mac (no restart)
+#   make retarget UDP_HOST=<ip>   send the stream to that machine instead of the board itself (no restart; UDP_HOST=auto to undo)
+#   make status      is the app running?
 #
 # Over Wi-Fi instead: `make enable-ssh` once over USB, then add `VIA=ssh BOARD=<ip or name.local>` to any target.
 #
@@ -33,17 +35,22 @@ PYTHON   ?= $(if $(wildcard .venv/bin/python),.venv/bin/python,python3)
 ADB      ?= $(firstword $(shell command -v adb 2>/dev/null) $(wildcard $(HOME)/Library/Arduino15/packages/arduino/tools/adb/*/adb))
 EXCLUDES := --exclude .venv --exclude __pycache__ --exclude '*.wav' --exclude .cache --exclude Makefile --exclude .DS_Store --exclude recordings
 
+# UDP_HOST=<ip> rewrites KEIKO_UDP_HOST in the *staged* copy of python/keiko.env (the file in git keeps `auto`).
+# The node re-reads keiko.env every second, so `make retarget UDP_HOST=...` redirects the stream with no restart.
+UDP_HOST ?=
+STAGE_CMD = rsync -a --delete $(EXCLUDES) ./ $(STAGE)/ $(if $(UDP_HOST),&& sed -i.bak "s/^KEIKO_UDP_HOST=.*/KEIKO_UDP_HOST=$(UDP_HOST)/" $(STAGE)/python/keiko.env && rm -f $(STAGE)/python/keiko.env.bak)
+
 ifeq ($(VIA),ssh)
   RUN    = ssh $(SSH_USER)@$(BOARD)
-  DEPLOY = rsync -a --delete $(EXCLUDES) ./ $(SSH_USER)@$(BOARD):$(APP_DIR)/
+  DEPLOY = $(STAGE_CMD) && rsync -a --delete $(STAGE)/ $(SSH_USER)@$(BOARD):$(APP_DIR)/
   PULL   = scp $(SSH_USER)@$(BOARD):
 else
   RUN    = $(ADB) shell
-  DEPLOY = rsync -a --delete $(EXCLUDES) ./ $(STAGE)/ && $(ADB) push $(STAGE) $(dir $(APP_DIR))
+  DEPLOY = $(STAGE_CMD) && $(ADB) push $(STAGE) $(dir $(APP_DIR))
   PULL   = $(ADB) pull 
 endif
 
-.PHONY: core check venv test deploy start restart stop logs follow shell ip enable-ssh listen record adb-check
+.PHONY: core check venv test deploy start restart stop logs follow shell ip enable-ssh listen record retarget status adb-check
 
 # ---- Mac-side --------------------------------------------------------------
 core:
@@ -79,6 +86,15 @@ deploy: adb-check
 
 start: deploy
 	$(RUN) "arduino-app-cli app restart $(APP_DIR)"
+
+# Point the running node at another receiver (e.g. the laptop running pipeline/) without restarting anything.
+retarget: deploy
+	@test -n "$(UDP_HOST)" || { echo "usage: make retarget UDP_HOST=<ip of the machine running the pipeline>  (or UDP_HOST=auto)"; exit 1; }
+	@echo "node now streams to $(if $(filter auto,$(UDP_HOST)),the board itself (docker gateway),$(UDP_HOST):5005) - picked up within ~1 s, check with make logs"
+
+# exit 0 if the app is running on the board
+status: adb-check
+	@$(RUN) "arduino-app-cli app list 2>/dev/null" | grep -q "keiko-unoq.*running" && echo "keiko-unoq: running" || { echo "keiko-unoq: not running (make start)"; exit 1; }
 
 restart: start
 

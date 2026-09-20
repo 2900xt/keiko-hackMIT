@@ -4,7 +4,8 @@
     python3 replay_wav.py call.wav                    # -> 127.0.0.1:5005 in real time
     python3 replay_wav.py call.wav --host 10.0.0.5 --speed 4 --loop
 
-Any sample rate works; the pipeline resamples. Use it to demo or test without a board.
+Any sample rate works; the pipeline resamples. WAV/FLAC/MP3 with soundfile installed, 16-bit WAV without.
+Use it to demo or test without a board.
 """
 import argparse, socket, struct, time, wave
 
@@ -15,11 +16,14 @@ ap.add_argument("--node", type=int, default=0); ap.add_argument("--speed", type=
 ap.add_argument("--block", type=int, default=256); ap.add_argument("--loop", action="store_true")
 a = ap.parse_args()
 
-with wave.open(a.wav, "rb") as w:
-    fs, ch, sw, n = w.getframerate(), w.getnchannels(), w.getsampwidth(), w.getnframes()
-    assert sw == 2, "16-bit PCM WAV only"
-    raw = w.readframes(n)
-pcm = struct.unpack(f"<{n * ch}h", raw)[::ch]
+try:
+    import soundfile as sf
+    y, fs = sf.read(a.wav, dtype="int16", always_2d=True); pcm = [int(v) for v in y[:, 0]]; n = len(pcm)
+except ImportError:                                   # stdlib fallback: 16-bit PCM WAV only
+    with wave.open(a.wav, "rb") as w:
+        fs, ch, sw, n = w.getframerate(), w.getnchannels(), w.getsampwidth(), w.getnframes()
+        assert sw == 2, "16-bit PCM WAV only"
+        pcm = struct.unpack(f"<{n * ch}h", w.readframes(n))[::ch]
 # 16-bit audio -> 14-bit ADC counts around mid-scale, like the UNO Q node sends
 counts = [8192 + (v >> 2) for v in pcm]
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)

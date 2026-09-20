@@ -13,36 +13,74 @@ node UDP (KEIK packets) ─► 3 s windows, 50% overlap ─► whale CNN v2 ─�
 | `keiko_pipeline.py` | the receiver + classifier + event logic (`--wav` runs it over a file instead of the network) |
 | `replay_wav.py` | streams any WAV as node packets, for demos and tests without a board |
 | `requirements.txt` | torch, librosa, soundfile … (same as `training/whale_cnn`, plus scipy/matplotlib/pillow for `--archive`) |
+| `Makefile`, `live.sh`, `demo.sh`, `netinfo.py` | `make test` / `make demo` / `make live` (see below) |
+| `test_pipeline.py` | offline regression: noise → no events, humpback sample → humpback event |
+| `samples/humpback_nps.mp3` | 38 s of humpback song, National Park Service, public domain — the demo and test input |
 
-## Run
-
-```bash
-python3 -m venv .venv && .venv/bin/pip install -r pipeline/requirements.txt      # once, from the repo root
-```
-
-Live, on a laptop on the same network as the UNO Q — set `KEIKO_UDP_HOST` in `firmware/unoq/python/keiko.env`
-to the laptop's IP, `make start` there, then:
+## Setup
 
 ```bash
-.venv/bin/python pipeline/keiko_pipeline.py
+cd pipeline && make venv          # once: ../.venv with torch, librosa, ... (a few minutes)
 ```
 
-Offline, over a recording (`make record` in `firmware/unoq` makes one):
+## Test (no hardware)
 
 ```bash
-.venv/bin/python pipeline/keiko_pipeline.py --wav firmware/unoq/recordings/<utc>.wav
+make test
 ```
 
-Demo without a board — two terminals:
+Runs the pipeline over 20 s of white noise at the UNO Q's 3333 Hz (must give no events) and over
+`samples/humpback_nps.mp3` (must give a humpback event). Takes ~15 s. Run it after touching thresholds or the model.
+
+## Demo (no hardware)
 
 ```bash
-.venv/bin/python pipeline/keiko_pipeline.py --min_conf 0.5
-.venv/bin/python pipeline/replay_wav.py some_whale_call.wav --loop
+make demo                         # ctrl-c stops it
 ```
 
-One line per window (`WHALE` marks windows that pass the abstain rule), then `EVENT …` when a run of whale windows
-ends. Add `--archive` to write each event into `open-source/data/` (clip, spectrogram, CSV + JSON row); commit that
-folder and the site shows it. Events land in `pipeline/out/` regardless (gitignored).
+`demo.sh` loops the humpback sample through `replay_wav.py` as if a node were streaming it, and runs the pipeline on
+it with `--min_conf 0.6`. Expect a `WHALE Megaptera_novaeangliae` line every 1.5 s during song and an `EVENT …
+humpback whale` line when each bout ends. `make demo ARGS="--archive --source synthetic"` also writes the events into
+`open-source/data/` so the website's Database tab shows them (revert or commit that folder afterwards).
+
+The sample is a National Park Service recording from the Glacier Bay hydrophone (public domain, via
+[archive.org](https://archive.org/details/HumpbackWhalesSongsSoundsVocalizations)). Any WAV/FLAC/MP3 works:
+`CLIP=path make demo`.
+
+## Live against the UNO Q
+
+Board plugged into this machine over USB-C (control goes over adb), board and machine on the same Wi-Fi (the audio
+comes over UDP). Then:
+
+```bash
+make live                         # add ARGS="--archive" to write detections to the site database
+```
+
+`live.sh` does what you would do by hand:
+
+1. `netinfo.py` asks the board for its addresses over adb and picks this machine's IP on the same subnet
+   (override with `UDP_HOST=<ip> make live`).
+2. `make -C ../firmware/unoq retarget UDP_HOST=<ip>` pushes a `keiko.env` with that address. The node re-reads the
+   file every second and switches its UDP destination — no app restart (restarts re-flash the MCU and have wedged
+   the board's router).
+3. If the app is not running it runs `make start` there (first time: ~2 min).
+4. Prints the node's health line and starts the pipeline. Within a couple of seconds you should see
+   `receiving from 192.168.x.y`, then one line per 3 s window.
+
+If the pipeline prints `no packets for N s`: check `make -C ../firmware/unoq logs` shows `fs=…` lines (if it stops at
+"App started", power-cycle the board), and that both machines really share a network (`netinfo.py` warns when they do
+not). `make -C ../firmware/unoq retarget UDP_HOST=auto` sends the stream back to the board itself.
+
+Offline over a recording (`make record` in `firmware/unoq` makes one):
+
+```bash
+../.venv/bin/python keiko_pipeline.py --wav ../firmware/unoq/recordings/<utc>.wav
+```
+
+What the output means: one line per window (`WHALE` marks windows that pass the abstain rule), then `EVENT …` when a
+run of whale windows ends. Events always land in `pipeline/out/` (gitignored) as a clip WAV plus a line in
+`events.jsonl`; with `--archive` they also go through `open-source/tools/keiko_data.py add` (clip, spectrogram,
+CSV + JSON row) — commit that folder and the site shows them.
 
 ## Knobs
 
