@@ -1,0 +1,10 @@
+profiles:
+  default:
+    # ESP32-S3-DevKitC-1-N8R8: 8 MB flash, 8 MB octal PSRAM, native USB on the port labelled "USB".
+    # CDCOnBoot=cdc makes `Serial` the USB-Serial-JTAG peripheral (no baud rate, ~1 MB/s) -- the block
+    # stream goes out there. The "UART" port (CP2102N -> Serial0) stays free for a debug console.
+    fqbn: esp32:esp32:esp32s3:CDCOnBoot=cdc,PSRAM=opi,FlashSize=8M,USBMode=hwcdc
+    platforms:
+      - platform: esp32:esp32 (3.3.12)
+        platform_index_url: https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+default_profile: default
