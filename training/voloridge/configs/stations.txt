@@ -1,0 +1,4 @@
+# NOAA ISD stations for the noise-floor join, USAF-WBAN, one per line.
+# Find more: python vendor/voloridge/noaa_isd/fetch.py --metadata  (writes data/noaa_isd/isd-history.csv),
+# then grep the STATION NAME / ICAO / LAT,LON columns; confirm years in isd-inventory.csv.
+725090-14739   # BOSTON LOGAN INTERNATIONAL AIRPORT, KBOS, 42.361 -71.010. Primary: ~6 km from the buoy.

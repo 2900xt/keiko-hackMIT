@@ -1,0 +1,11 @@
+# GPU box: torch is installed separately by infra/bootstrap_instance.sh (CUDA wheel). Laptop: pip install torch.
+numpy
+pandas
+scipy
+scikit-learn
+librosa
+soundfile
+boto3
+matplotlib
+onnx
+pyarrow
