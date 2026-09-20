@@ -62,7 +62,11 @@
         <div class="eyebrow">Sightings</div>
         <div class="db-title"><span id="db-total">0</span> whale detections</div>
       </div>
-      <div class="meta">Newest first · synthetic data</div>
+      <div class="db-links">
+        <span class="meta" id="db-meta">Loading archive…</span>
+        <a class="link" id="db-csv" href="data/detections.csv" download>Download CSV</a>
+        <a class="link" href="https://github.com/2900xt/keiko-hackMIT/tree/main/open-source/data" rel="noopener">Database on GitHub</a>
+      </div>
     </div>
     <table class="db-table">
       <thead>
@@ -70,7 +74,7 @@
       </thead>
       <tbody id="db-rows"></tbody>
     </table>
-    <p class="db-empty" id="db-empty">No detections yet. Leave the Live tab running for a minute.</p>
+    <p class="db-empty" id="db-empty">No detections yet.</p>
   </main>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"

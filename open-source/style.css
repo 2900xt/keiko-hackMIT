@@ -96,6 +96,12 @@ body {
 .db-head { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px; }
 .db-title { font-size: 26px; font-weight: 700; letter-spacing: -0.01em; }
 .db-title span { font-variant-numeric: tabular-nums; }
+.db-links { display: flex; align-items: center; gap: 20px; }
+.link { color: var(--ink); font-size: 13px; font-weight: 700; text-decoration: none; border-bottom: 1px solid var(--ink); }
+.link:hover { border-bottom-color: transparent; }
+.tag { display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; vertical-align: middle; }
+.tag-live { background: #fff1c2; color: #8a5a00; }
+.tag-archive { background: #eef2f6; color: #4a5a6a; }
 .db-table { width: 100%; border-collapse: collapse; }
 .db-table th { text-align: left; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); padding: 8px 12px 8px 0; border-bottom: 1px solid var(--ink); }
 .db-table td { padding: 10px 12px 10px 0; border-bottom: 1px solid var(--rule); vertical-align: middle; font-variant-numeric: tabular-nums; }
@@ -105,7 +111,7 @@ body {
 .conf { display: inline-flex; align-items: center; gap: 8px; }
 .conf-bar { width: 64px; height: 6px; background: var(--rule); border-radius: 3px; overflow: hidden; }
 .conf-bar i { display: block; height: 100%; background: var(--ink); }
-.thumb { display: block; width: 144px; height: 48px; border-radius: 2px; background: #000004; }
+.thumb { display: block; width: 144px; height: 48px; border-radius: 2px; background: #000004; object-fit: fill; }
 .db-table audio { height: 32px; width: 220px; }
 .db-empty { color: var(--ink-2); margin: 24px 0; }
 

@@ -127,26 +127,57 @@
     return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
   }
 
-  function addDetection(d, live) {
+  // Where the GitHub database lives, relative to this page. On GitHub Pages this is the
+  // repo's own data/ folder; for a page hosted elsewhere point it at the raw GitHub URL:
+  //   'https://raw.githubusercontent.com/2900xt/keiko-hackMIT/main/open-source/data/'
+  const DATA_BASE = 'data/';
+  let archived = 0, live = 0;
+
+  function addDetection(d, isLive) {
     detections.push(d);
+    if (isLive) live++; else archived++;
     const when = new Date(d.ts);
     const tr = document.createElement('tr');
-    if (live) tr.className = 'new';
+    if (isLive) tr.className = 'new';
+    const tag = isLive ? '<span class="tag tag-live">live</span>' : '<span class="tag tag-archive">' + (d.source || 'archive') + '</span>';
     tr.innerHTML =
-      '<td>' + when.toLocaleTimeString() + '<span class="sub">' + when.toLocaleDateString() + '</span></td>' +
-      '<td>' + d.lat.toFixed(5) + ', ' + d.lon.toFixed(5) + '<span class="sub">' + d.f0 + ' Hz · ' + d.duration_s + ' s</span></td>' +
+      '<td>' + when.toLocaleTimeString() + tag + '<span class="sub">' + when.toLocaleDateString() + '</span></td>' +
+      '<td>' + d.lat.toFixed(5) + ', ' + d.lon.toFixed(5) + '<span class="sub">' + Math.round(d.f0) + ' Hz · ' + d.duration_s + ' s</span></td>' +
       '<td><span class="conf"><span class="conf-bar"><i style="width:' + Math.round(d.confidence * 100) + '%"></i></span>' + Math.round(d.confidence * 100) + '%</span></td>' +
       '<td class="td-thumb"></td>' +
-      '<td><audio controls preload="none" src="' + wav(d) + '"></audio></td>';
-    tr.querySelector('.td-thumb').appendChild(thumb(d));
+      '<td><audio controls preload="metadata" src="' + (d.clip || wav(d)) + '"></audio></td>';
+    if (d.spectrogram) {
+      const img = new Image(); img.className = 'thumb'; img.src = d.spectrogram; img.alt = 'spectrogram';
+      tr.querySelector('.td-thumb').appendChild(img);
+    } else {
+      tr.querySelector('.td-thumb').appendChild(thumb(d));
+    }
     $('db-rows').prepend(tr);
     $('db-count').textContent = $('db-total').textContent = detections.length;
+    $('db-meta').textContent = archived + ' archived in data/detections.csv · ' + live + ' live this session (not yet archived)';
     $('db-empty').classList.add('hidden');
     L.marker([d.lat, d.lon], { icon: L.divIcon({ className: '', html: '<div class="sighting"></div>', iconSize: [10, 10], iconAnchor: [5, 5] }) })
-      .bindTooltip(Math.round(d.confidence * 100) + '% · ' + when.toLocaleTimeString(), { direction: 'top', offset: [0, -6] })
+      .bindTooltip(Math.round(d.confidence * 100) + '% · ' + when.toLocaleString(), { direction: 'top', offset: [0, -6] })
       .addTo(sightings);
   }
-  feed.backfill(8).forEach((d) => addDetection(d, false));
+
+  // Archive rows come from the GitHub database; live rows from the feed.
+  fetch(DATA_BASE + 'detections.json')
+    .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then((db) => {
+      db.detections
+        .slice().sort((a, b) => a.timestamp_utc.localeCompare(b.timestamp_utc))
+        .forEach((r) => addDetection({
+          id: r.id, ts: r.timestamp_utc, lat: r.latitude, lon: r.longitude, confidence: r.confidence,
+          f0: r.peak_hz || 0, sweep: 0, duration_s: r.duration_s, source: r.source,
+          spectrogram: DATA_BASE + r.spectrogram_path, clip: DATA_BASE + r.clip_path,
+        }, false));
+      if (!db.detections.length) $('db-meta').textContent = 'Archive is empty';
+    })
+    .catch((e) => {
+      $('db-meta').textContent = 'Archive unavailable (' + e.message + '); showing synthetic rows only';
+      feed.backfill(8).forEach((d) => addDetection(d, false));
+    });
   feed.on('detection', (d) => addDetection(d, true));
 
   feed.start();
